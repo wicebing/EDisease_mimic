@@ -91,7 +91,7 @@ class structure_emb(nn.Module):
                                  position_ids=position_ids,
                                  token_type_ids=token_type_ids)
         
-        return outputs
+        return outputs[0][:,:1,:]
 
 
 
@@ -241,10 +241,16 @@ if __name__ == '__main__':
     tensor = torch.arange(0,6)
     tensor_b = (1/96)*tensor
     tensor_c = (1/192)*tensor
-    x = torch.stack([tensor,tensor_b,tensor_c])
+    inputs = torch.stack([tensor,tensor_b,tensor_c])
+        
+    config = EDiseaseConfig()
+    structure_emb = structure_emb(config)
+    attention_mask = torch.ones(inputs.shape[:2],dtype=torch.long)
+    position_ids = torch.ones(inputs.shape[:2],dtype=torch.long)
     
-    a = float2spectrum(96)
-    y = a(x)
+    output = structure_emb(inputs=inputs,
+                  attention_mask=attention_mask,
+                  position_ids=position_ids)
 
     import AIED_dataloader_nhamcs
     model_name = "bert-base-multilingual-cased"
