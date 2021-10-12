@@ -24,8 +24,8 @@ class float2spectrum(nn.Module):
     
 '''
 tensor = torch.arange(0,6)
-tensor_b = 0.1*tensor
-tensor_c = -0.1*tensor
+tensor_b = (1/96)*tensor
+tensor_c = (1/192)*tensor
 x = torch.stack([tensor,tensor_b,tensor_c])
 
 a = float2spectrum(96)
