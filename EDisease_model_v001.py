@@ -22,7 +22,7 @@ from EDisease_config import EDiseaseConfig, StructrualConfig
 
 
 class adjBERTmodel(nn.Module):
-    def __init__(self, bert_ver, embedding_size, fixBERT=True):
+    def __init__(self, bert_ver, fixBERT=True):
         super(adjBERTmodel, self).__init__()
         
         self.Emodel = AutoModel.from_pretrained(bert_ver)
@@ -43,20 +43,16 @@ class adjBERTmodel(nn.Module):
                                      nn.LayerNorm(embedding_size),
                                      )
 
-    def forward(self, inputs:dict, cls_token=None):
-        outputs = self.Emodel(**inputs)
-        last_hidden_states = outputs.last_hidden_state          
+    def forward(self, input_ids,attention_mask, position_ids=None,token_type_ids=None,return_dict=True):    
+        inputs = {'input_ids':input_ids,
+                  'attention_mask':attention_mask}
+        outputs = self.Emodel(**inputs,return_dict=return_dict)
+        last_hidden_states = outputs.last_hidden_state 
+        
         heads = last_hidden_states[:,0,:]
         
-        convert_head = self.emb_emb(heads)
-        # convert_cls = self.emb_emb(self.CLS_emb)
-        
-        if cls_token is None:
-            return convert_head, heads
-        else:
-            CLS_emb = self.Emodel.embeddings.word_embeddings(cls_token)
-            convert_cls = self.emb_emb(CLS_emb)
-            return convert_head, convert_cls
+        return heads
+
 
 class float2spectrum(nn.Module):
     def __init__(self, embedding_size):
@@ -94,12 +90,25 @@ class structure_emb(nn.Module):
         
         return outputs[0][:,:1,:]
 
+class emb_emb(nn.Module):
+    def __init__(self, config):
+        super(emb_emb, self).__init__()
+        self.emb_emb = nn.Sequential(nn.Linear(config.bert_hidden_size,2*config.hidden_size),
+                                     nn.GELU(),
+                                     nn.Dropout(0.5),
+                                     nn.Linear(2*config.hidden_size,config.hidden_size),
+                                     nn.LayerNorm(config.hidden_size),
+                                     )
+
+    def forward(self, hidden_states):
+        pooled_output = self.emb_emb(hidden_states)
+        return pooled_output    
 
 class EDisease_Model(nn.Module):
     def __init__(self,T_config,S_config,tokanizer,device='cpu'):
         super(EDisease_Model, self).__init__() 
         self.stc2emb = structure_emb(S_config)
-                 
+                    
         self.Config = BertConfig()
         self.Config.hidden_size = T_config.hidden_size
         self.Config.num_hidden_layers = T_config.num_hidden_layers
@@ -110,6 +119,7 @@ class EDisease_Model(nn.Module):
         self.Config.vocab_size=T_config.vocab_size
         
         self.BERTmodel = BertModel(self.Config)
+        self.emb_emb = emb_emb(T_config)
         
         self.tokanizer = tokanizer
         self.device = device
