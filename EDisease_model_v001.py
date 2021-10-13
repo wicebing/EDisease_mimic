@@ -36,13 +36,6 @@ class adjBERTmodel(nn.Module):
             print(' ** fix pretrained BERT WEIGHT ** ')
             print('baseBERT PARAMETERS: ' ,count_parameters(self.Emodel))
         
-        self.emb_emb = nn.Sequential(nn.Linear(self.config.hidden_size,2*embedding_size),
-                                     nn.GELU(),
-                                     nn.Dropout(0.5),
-                                     nn.Linear(2*embedding_size,embedding_size),
-                                     nn.LayerNorm(embedding_size),
-                                     )
-
     def forward(self, input_ids,attention_mask, position_ids=None,token_type_ids=None,return_dict=True):    
         inputs = {'input_ids':input_ids,
                   'attention_mask':attention_mask}
@@ -118,7 +111,7 @@ class EDisease_Model(nn.Module):
         self.Config.type_vocab_size= T_config.type_vocab_size
         self.Config.vocab_size=T_config.vocab_size
         
-        self.BERTmodel = BertModel(self.Config)
+        self.EDisease_Transformer = BertModel(self.Config)
         self.emb_emb = emb_emb(T_config)
         
         self.tokanizer = tokanizer
@@ -201,8 +194,8 @@ class EDisease_Model(nn.Module):
             p_emb_emb = self.emb_emb(p_emb)
 
             expand_data_sz = 1
-            input_emb = torch.cat([CLS_emb_emb,s_emb.unsqueeze(1),c_emb_emb.unsqueeze(1),h_emb_emb.unsqueeze(1),p_emb_emb.unsqueeze(1)],dim=1)
-            input_emb_org = torch.cat([CLS_emb_emb,s_emb_org.unsqueeze(1),c_emb_emb.unsqueeze(1),h_emb_emb.unsqueeze(1),p_emb_emb.unsqueeze(1)],dim=1)
+            input_emb = torch.cat([CLS_emb_emb,s_emb,c_emb_emb.unsqueeze(1),h_emb_emb.unsqueeze(1),p_emb_emb.unsqueeze(1)],dim=1)
+            input_emb_org = torch.cat([CLS_emb_emb,s_emb_org,c_emb_emb.unsqueeze(1),h_emb_emb.unsqueeze(1),p_emb_emb.unsqueeze(1)],dim=1)
             
             nohx = inputs['stack_hx_n'] < 2
             attention_mask = torch.ones(input_emb.shape[:2],device=self.device)
@@ -227,12 +220,12 @@ class EDisease_Model(nn.Module):
             yespi = None
             expand_data_sz = 0
             if expand_data is None:
-                input_emb = torch.cat([CLS_emb_emb,s_emb.unsqueeze(1),c_emb_emb.unsqueeze(1),h_emb_emb.unsqueeze(1)],dim=1)
-                input_emb_org = torch.cat([CLS_emb_emb,s_emb_org.unsqueeze(1),c_emb_emb.unsqueeze(1),h_emb_emb.unsqueeze(1)],dim=1)
+                input_emb = torch.cat([CLS_emb_emb,s_emb,c_emb_emb.unsqueeze(1),h_emb_emb.unsqueeze(1)],dim=1)
+                input_emb_org = torch.cat([CLS_emb_emb,s_emb_org,c_emb_emb.unsqueeze(1),h_emb_emb.unsqueeze(1)],dim=1)
             else:
-                input_emb = torch.cat([CLS_emb_emb,s_emb.unsqueeze(1),c_emb_emb.unsqueeze(1),h_emb_emb.unsqueeze(1),expand_data['emb']],dim=1)
+                input_emb = torch.cat([CLS_emb_emb,s_emb,c_emb_emb.unsqueeze(1),h_emb_emb.unsqueeze(1),expand_data['emb']],dim=1)
                 expand_data_sz = expand_data['emb'].shape[1]
-                input_emb_org = torch.cat([CLS_emb_emb,s_emb_org.unsqueeze(1),c_emb_emb.unsqueeze(1),h_emb_emb.unsqueeze(1),expand_data['emb']],dim=1)
+                input_emb_org = torch.cat([CLS_emb_emb,s_emb_org,c_emb_emb.unsqueeze(1),h_emb_emb.unsqueeze(1),expand_data['emb']],dim=1)
                 expand_data_sz = expand_data['emb'].shape[1]
 
             nohx = inputs['stack_hx_n'] < 2

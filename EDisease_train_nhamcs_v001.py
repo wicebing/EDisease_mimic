@@ -86,7 +86,7 @@ def make_trg(sample, train_cls=True):
         
     return trg_cls
 
-def train_NHAMCS(DS_model,
+def train_NHAMCS(EDisease_Model,
                  baseBERT,
                  dloader,
                  lr=1e-4,
@@ -98,12 +98,12 @@ def train_NHAMCS(DS_model,
                  checkpoint_file=checkpoint_file,
                  ): 
     
-    DS_model.to(device)
+    EDisease_Model.to(device)
     baseBERT.to(device)
         
-    model_optimizer = optim.Adam(DS_model.parameters(), lr=lr)
+    model_optimizer = optim.Adam(EDisease_Model.parameters(), lr=lr)
     if parallel:
-        DS_model = torch.nn.DataParallel(DS_model)
+        EDisease_Model = torch.nn.DataParallel(EDisease_Model)
         baseBERT = torch.nn.DataParallel(baseBERT)
     else:
         if device == 'cuda':
@@ -127,7 +127,7 @@ def train_NHAMCS(DS_model,
             model_optimizer.zero_grad()
             loss = 0
             
-            output,EDisease, (s,input_emb,input_emb_org), (CLS_emb_emb,SEP_emb_emb),(c_emb,h_emb_mean,p_emb,yespi), nohx, expand_data = DS_model(baseBERT,sample,noise_scale=noise_scale,mask_ratio=mask_ratio,use_pi=False,)
+            output,EDisease, (s,input_emb,input_emb_org), (CLS_emb_emb,SEP_emb_emb),(c_emb,h_emb_mean,p_emb,yespi), nohx, expand_data = EDisease_Model(baseBERT,sample,noise_scale=noise_scale,mask_ratio=mask_ratio,use_pi=False,)
 
             
 
@@ -135,12 +135,9 @@ def train_NHAMCS(DS_model,
         if ep % 1 ==0:
             save_checkpoint(checkpoint_file=checkpoint_file,
                             checkpoint_path='EDisease.pth',
-                            model=DS_model,
+                            model=EDisease_Model,
                             parallel=parallel)
-            save_checkpoint(checkpoint_file=checkpoint_file,
-                            checkpoint_path='DIM.pth',
-                            model=dim_model,
-                            parallel=parallel)
+
 
             print('======= epoch:%i ========'%ep)
             
@@ -159,15 +156,13 @@ def train_NHAMCS(DS_model,
 '  =======================================================================================================  '   
             
 if task=='pickle_nhamcs_cls_dim_val':
-    batch_size = 1024
+    batch_size = 16
     use_pi= False
     parallel = False
 
     model_name = "bert-base-multilingual-cased"
     
-    adjBERT = ED_model.adjBERTmodel(bert_ver=model_name,
-                           embedding_size=96,
-                           fixBERT=False)
+    baseBERT = ED_model.adjBERTmodel(bert_ver=model_name,fixBERT=False)
     
     BERT_tokenizer = AutoTokenizer.from_pretrained(model_name)
     
