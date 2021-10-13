@@ -553,9 +553,13 @@ class EDEW_Dataset(Dataset):
         
         structure = np.array(structure_df,dtype='float')
         
+        structure_attention_mask = np.ones(structure.shape)
+        structure_position_ids = np.arange(0, len(S_select))
+        
         for i,d in enumerate(structure):
             if str(d) == 'nan':
                 structure[i] = 999
+                structure_attention_mask[i]=0
                     
         nan = np.isnan(structure)
                     
@@ -580,6 +584,9 @@ class EDEW_Dataset(Dataset):
             structure_normalization[4] = -4
             
         structure_tensor = torch.tensor(np.float32(structure_normalization),dtype=torch.float32)
+        structure_attention_mask_tensor = torch.tensor(structure_attention_mask,dtype=torch.long)
+        structure_position_ids_tensor = torch.tensor(structure_position_ids,dtype=torch.long)
+        
         chief_complaint_tensor = torch.tensor(cc_token_ids,dtype=torch.float32)
 
         target_select = ['DOA',
@@ -607,6 +614,8 @@ class EDEW_Dataset(Dataset):
                   'SS':structure}
         
         datas = {'structure': structure_tensor,
+                 'structure_attention_mask': structure_attention_mask_tensor,
+                 'structure_position_ids': structure_position_ids_tensor,
                  'cc': chief_complaint_tensor,
                  'hx': hx_token_ids,
                  'trg':trg_tensor,
@@ -623,6 +632,8 @@ def collate_fn(datas):
     from torch.nn.utils.rnn import pad_sequence
     batch = {}
     structure = [DD['structure'] for DD in datas]
+    structure_attention_mask = [DD['structure_attention_mask'] for DD in datas]
+    structure_position_ids = [DD['structure_position_ids'] for DD in datas]
     cc = [DD['cc'] for DD in datas]
     stack_hx_ = [DD['hx'] for DD in datas]
     trg = [DD['trg'] for DD in datas]
@@ -657,6 +668,8 @@ def collate_fn(datas):
         mask_padding_ehx[i,:e] = 1
         
     batch['structure'] = torch.stack(structure)
+    batch['structure_attention_mask'] = torch.stack(structure_attention_mask)
+    batch['structure_position_ids'] = torch.stack(structure_position_ids)
     batch['cc'] = cc
     batch['ehx'] = ehx
     

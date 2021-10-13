@@ -18,7 +18,8 @@ from transformers import AutoConfig, AutoTokenizer, AutoModel, BertConfig, BertM
 import torch
 
 from EDisease_utils import count_parameters
-from EDisease_config import EDiseaseConfig 
+from EDisease_config import EDiseaseConfig, StructrualConfig
+
 
 class adjBERTmodel(nn.Module):
     def __init__(self, bert_ver, embedding_size, fixBERT=True):
@@ -75,7 +76,7 @@ class structure_emb(nn.Module):
         self.Config = BertConfig()
         self.Config.hidden_size = config.hidden_size
         self.Config.num_hidden_layers = config.num_hidden_layers
-        self.Config.intermediate_size = 256
+        self.Config.intermediate_size = config.intermediate_size
         self.Config.num_attention_heads = config.num_attention_heads
         self.Config.max_position_embeddings = config.max_position_embeddings
         self.Config.type_vocab_size= config.type_vocab_size
@@ -94,16 +95,177 @@ class structure_emb(nn.Module):
         return outputs[0][:,:1,:]
 
 
+class EDisease_Model(nn.Module):
+    def __init__(self,T_config,S_config,tokanizer,device='cpu'):
+        super(EDisease_Model, self).__init__() 
+        self.stc2emb = structure_emb(S_config)
+                 
+        self.Config = BertConfig()
+        self.Config.hidden_size = T_config.hidden_size
+        self.Config.num_hidden_layers = T_config.num_hidden_layers
+        self.Config.intermediate_size = T_config.intermediate_size
+        self.Config.num_attention_heads = T_config.num_attention_heads
+        self.Config.max_position_embeddings = T_config.max_position_embeddings
+        self.Config.type_vocab_size= T_config.type_vocab_size
+        self.Config.vocab_size=T_config.vocab_size
+        
+        self.BERTmodel = BertModel(self.Config)
+        
+        self.tokanizer = tokanizer
+        self.device = device
+        
+        '''
+        if fixpretrain:
+            for param in self.baseBERT.parameters():
+                param.requires_grad = False
+        '''
+    def forward(self,
+                baseBERT,
+                inputs,
+                normalization=None, 
+                noise_scale=0.001,
+                mask_ratio=0.15, 
+                mask_ratio_pi=0.5,
+                token_type_ids=None, 
+                expand_data=None,
+                use_pi=False,
+                test=False):
+               
+        s,c,cm,h,hm = inputs['structure'],inputs['cc'],inputs['mask_cc'],inputs['ehx'],inputs['mask_ehx']
+        s,c,cm,h,hm = s.to(self.device),c.to(self.device),cm.to(self.device),h.to(self.device),hm.to(self.device)
+        
+        sp, sm = inputs['structure_position_ids'], inputs['structure_attention_mask']
+        sp, sm = sp.to(self.device), sm.to(self.device)
+               
+        if normalization is None:
+            s_noise = s
+        else:
+            #normalization = torch.tensor(normalization).expand(s.shape).to(self.device)
+            normalization = torch.ones(s.shape).to(self.device)
+            noise_ = normalization*noise_scale*torch.randn_like(s,device=self.device)
+            s_noise = s+noise_
+            
+        baseBERT.eval()
+        s_emb = self.stc2emb(inputs=s_noise,
+                             attention_mask=sm,
+                             position_ids=sp)
+        s_emb_org = self.stc2emb(inputs=s,
+                                 attention_mask=sm,
+                                 position_ids=sp)
+        c_emb = baseBERT(c.long(),cm.long())
+        h_emb = baseBERT(h.long(),hm.long())
+        
+        CLS_emb = baseBERT.Emodel.base_model.embeddings.word_embeddings(torch.tensor([self.tokanizer.cls_token_id],device=self.device))
+        SEP_emb = baseBERT.Emodel.base_model.embeddings.word_embeddings(torch.tensor([self.tokanizer.sep_token_id],device=self.device))
+        PAD_emb = baseBERT.Emodel.base_model.embeddings.word_embeddings(torch.tensor([self.tokanizer.pad_token_id],device=self.device))
+                
+        cumsum_hx_n = torch.cumsum(inputs['stack_hx_n'],0)
+        h_emb_mean_ = []
+        for i,e in enumerate(cumsum_hx_n):            
+            if inputs['stack_hx_n'][i]>1:
+                h_mean = torch.mean(h_emb[1:cumsum_hx_n[i]],dim=0) if i < 1 else torch.mean(h_emb[1+cumsum_hx_n[i-1]:cumsum_hx_n[i]],dim=0)
+                h_emb_mean_.append(h_mean)
+            else:
+                h_emb_mean_.append(PAD_emb.view(h_emb[0].shape))
+                
+        h_emb_mean = torch.stack(h_emb_mean_)
+        h_emb_mean.to(self.device)
+               
+        c_emb_emb = self.emb_emb(c_emb)
+        h_emb_emb = self.emb_emb(h_emb_mean)
+               
+        CLS_emb_emb = self.emb_emb(CLS_emb)
+        SEP_emb_emb = self.emb_emb(SEP_emb)
+        
+        CLS_emb_emb = CLS_emb_emb.expand(c_emb_emb.shape)
+        SEP_emb_emb = SEP_emb_emb.expand(c_emb_emb.shape)
+
+        CLS_emb_emb.unsqueeze_(1)
+        SEP_emb_emb.unsqueeze_(1)
+
+        if use_pi:
+            pi,pm,pil,yespi = inputs['pi'],inputs['mask_pi'],inputs['origin_pi_length'],inputs['yesPI']
+            pi,pm,pil,yespi = pi.to(self.device),pm.to(self.device),pil.to(self.device),yespi.to(self.device)       
+            p_emb = baseBERT(pi.long(),pm.long())
+            
+            p_emb_emb = self.emb_emb(p_emb)
+
+            expand_data_sz = 1
+            input_emb = torch.cat([CLS_emb_emb,s_emb.unsqueeze(1),c_emb_emb.unsqueeze(1),h_emb_emb.unsqueeze(1),p_emb_emb.unsqueeze(1)],dim=1)
+            input_emb_org = torch.cat([CLS_emb_emb,s_emb_org.unsqueeze(1),c_emb_emb.unsqueeze(1),h_emb_emb.unsqueeze(1),p_emb_emb.unsqueeze(1)],dim=1)
+            
+            nohx = inputs['stack_hx_n'] < 2
+            attention_mask = torch.ones(input_emb.shape[:2],device=self.device)
+            for i,e in enumerate(nohx):
+                if e:
+                    attention_mask[i,-1-expand_data_sz] = 0
+                else:
+                    rd = random.random()
+                    if rd < mask_ratio:
+                        attention_mask[i,-1-expand_data_sz] = 0            
+            
+            nopi = inputs['yesPI'] < 1
+            for i,e in enumerate(nopi):
+                if e:
+                    attention_mask[i,-1] = 0
+                else:
+                    rd = random.random()
+                    if rd < mask_ratio_pi:
+                        attention_mask[i,-1] = 0                               
+        else:  
+            p_emb = None
+            yespi = None
+            expand_data_sz = 0
+            if expand_data is None:
+                input_emb = torch.cat([CLS_emb_emb,s_emb.unsqueeze(1),c_emb_emb.unsqueeze(1),h_emb_emb.unsqueeze(1)],dim=1)
+                input_emb_org = torch.cat([CLS_emb_emb,s_emb_org.unsqueeze(1),c_emb_emb.unsqueeze(1),h_emb_emb.unsqueeze(1)],dim=1)
+            else:
+                input_emb = torch.cat([CLS_emb_emb,s_emb.unsqueeze(1),c_emb_emb.unsqueeze(1),h_emb_emb.unsqueeze(1),expand_data['emb']],dim=1)
+                expand_data_sz = expand_data['emb'].shape[1]
+                input_emb_org = torch.cat([CLS_emb_emb,s_emb_org.unsqueeze(1),c_emb_emb.unsqueeze(1),h_emb_emb.unsqueeze(1),expand_data['emb']],dim=1)
+                expand_data_sz = expand_data['emb'].shape[1]
+
+            nohx = inputs['stack_hx_n'] < 2
+            attention_mask = torch.ones(input_emb.shape[:2],device=self.device)
+            for i,e in enumerate(nohx):
+                if e:
+                    attention_mask[i,-1-expand_data_sz] = 0
+                else:
+                    if test:
+                        pass
+                    else:
+                        rd = random.random()
+                        if rd < mask_ratio:
+                            attention_mask[i,-1-expand_data_sz] = 0
+            if expand_data is not None:
+                attention_mask[:,-1*expand_data_sz:] = expand_data['mask']
+
+        extended_attention_mask = attention_mask.unsqueeze(1).unsqueeze(2)
+        extended_attention_mask = extended_attention_mask.to(dtype=next(self.parameters()).dtype) # fp16 compatibility
+        extended_attention_mask = (1.0 - extended_attention_mask) * -10000.0   
+
+        output = self.embeddings(input_emb,token_type_ids)
+        output = self.encoder(output,extended_attention_mask)
+
+        EDisease = output[:,:1]
+        #g_class = self.gen_class(ptemb)
+        #g_decoder = self.gen_decoder(ptemb)
+
+        output = self.EDis(EDisease)
+
+        return output,EDisease, (s,input_emb,input_emb_org), (CLS_emb_emb,SEP_emb_emb),(c_emb,h_emb_mean,p_emb,yespi), inputs['stack_hx_n'],expand_data
+
+
 
 class pickle_Model(nn.Module):
     def __init__(self,config,tokanizer,device='cpu'):
         super(pickle_Model, self).__init__() 
-        self.stc2emb = float2spectrum(config)
+        self.stc2emb = structure_emb(config)
                  
         self.Config = BertConfig()
         self.Config.hidden_size = config.hidden_size
         self.Config.num_hidden_layers = config.num_hidden_layers
-        self.Config.intermediate_size = 256
+        self.Config.intermediate_size = config.intermediate_size
         self.Config.num_attention_heads = config.num_attention_heads
         self.Config.max_position_embeddings = config.max_position_embeddings
         self.Config.type_vocab_size= config.type_vocab_size
