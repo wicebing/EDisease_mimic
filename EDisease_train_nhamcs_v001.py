@@ -129,7 +129,26 @@ def train_NHAMCS(EDisease_Model,
             
             output,EDisease, (s,input_emb,input_emb_org), (CLS_emb_emb,SEP_emb_emb),(c_emb,h_emb_mean,p_emb,yespi), nohx, expand_data = EDisease_Model(baseBERT,sample,noise_scale=noise_scale,mask_ratio=mask_ratio,use_pi=False,)
 
+            aug2 = 2*random.random()
+            output2,EDisease2, (s,input_emb2,input_emb_org2), _,_, _, _ = EDisease_Model(baseBERT,sample,noise_scale=aug2*noise_scale,mask_ratio=mask_ratio,use_pi=False)       
             
+            bs = len(s)            
+
+            loss_dim = dim_model(output[:,:1],
+                             input_emb_org,
+                             CLS_emb_emb,
+                             nohx,
+                             mask_ratio=mask_ratio,
+                             mode=mode,
+                             ptloss=ptloss,
+                             DS_model=DS_model,
+                             mix_ratio=mix_ratio,
+                             EDisease2=output2[:,:1],
+                             shuffle=True,
+                             use_pi=use_pi,
+                             yespi=yespi,
+                             ep=ep
+                            )            
 
 
         if ep % 1 ==0:
@@ -159,6 +178,7 @@ if task=='pickle_nhamcs_cls_dim_val':
     batch_size = 16
     use_pi= False
     parallel = False
+    device = 'cpu'
 
     model_name = "bert-base-multilingual-cased"
     
@@ -169,7 +189,16 @@ if task=='pickle_nhamcs_cls_dim_val':
     T_config = EDiseaseConfig()
     S_config = StructrualConfig()
     
-    EDisease_Model = ED_model.EDisease_Model(T_config, S_config, BERT_tokenizer)
+    EDisease_Model = ED_model.EDisease_Model(T_config=T_config,
+                                             S_config=S_config,
+                                             tokanizer=BERT_tokenizer,
+                                             device=device)
+
+    dim_model = ED_model.DIM(T_config=T_config,
+                              device=device,
+                              alpha=alpha,
+                              beta=beta,
+                              gamma=gamma)
 
 # ====
     all_datas = dataloader.load_datas()
@@ -190,7 +219,7 @@ if task=='pickle_nhamcs_cls_dim_val':
     EDEW_DL_val = DataLoader(dataset = EDEW_DS_val,
                          shuffle = False,
                          num_workers=4,
-                         batch_size=128,
+                         batch_size=batch_size,
                          collate_fn=dataloader.collate_fn)
 # ====
 
