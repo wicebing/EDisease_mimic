@@ -87,6 +87,7 @@ class emb_emb(nn.Module):
     def __init__(self, config):
         super(emb_emb, self).__init__()
         self.emb_emb = nn.Sequential(nn.Linear(config.bert_hidden_size,2*config.hidden_size),
+                                     nn.LayerNorm(2*config.hidden_size),
                                      nn.GELU(),
                                      nn.Dropout(0.5),
                                      nn.Linear(2*config.hidden_size,config.hidden_size),
@@ -265,9 +266,11 @@ class classifier(nn.Module):
     def __init__(self, config):
         super(classifier, self).__init__()
         self.avgpool = nn.Sequential(nn.Linear(config.hidden_size,4*config.hidden_size),
+                                     nn.LayerNorm(4*config.hidden_size),
                                      nn.GELU(),
                                      nn.Dropout(0.5),
                                      nn.Linear(4*config.hidden_size,2*config.hidden_size),
+                                     nn.LayerNorm(2*config.hidden_size),
                                      nn.GELU(),
                                      nn.Dropout(0.5),
                                      nn.Linear(2*config.hidden_size,config.classifier_num)
@@ -294,68 +297,40 @@ class GnLD(nn.Module):
         self.EDisease_Transformer = BertModel(self.Config)
         self.classifier = classifier(self.Config)
         
-    def forward(self, EDisease, M, SEP_emb_emb, nohx, token_type_ids=None, expand_data=None,mask_ratio=0.15,mask_ratio_pi=0.5,DS_model=None,mix_ratio=0.0,use_pi=False,yespi=None):
+    def forward(self, 
+                EDisease,
+                M, 
+                SEP_emb_emb, 
+                nohx,
+                position_ids,
+                attention_mask,
+                token_type_ids=None, 
+                mask_ratio=0.15):
         bs = EDisease.shape[0]
+               
+        EM = torch.cat([M[:,:1],EDisease,SEP_emb_emb,M[:,1:]],dim=1)
         
-        if use_pi:
-            expand_data_sz = 1
-            EM = torch.cat([M[:,:1],EDisease,SEP_emb_emb,M[:,1:]],dim=1)
+        new_position_ids = torch.cat([position_ids[:,:3],position_ids[:,1:]+10],dim=1)
 
-            input_shape = EM.size()[:-1]
-            if token_type_ids is None:
-                token_type_ids = torch.zeros(input_shape, dtype=torch.long, device=self.device)
-                token_type_ids[:,2:] = 1
+        input_shape = EM.size()[:-1]
+        if token_type_ids is None:
+            token_type_ids = torch.zeros(input_shape, dtype=torch.long, device=self.device)
+            token_type_ids[:,2:] = 1
 
-            attention_mask = torch.ones(EM.shape[:2],device=self.device)
+        attention_mask = torch.ones(EM.shape[:2],device=self.device)
 
-            for i,e in enumerate(nohx):
-                if e<2:
-                    attention_mask[i,-1-expand_data_sz] = 0
+        for i,e in enumerate(nohx):
+            if e<2:
+                attention_mask[i,-1] = 0
 
-                else:
-                    rd = random.random()
-                    if rd < mask_ratio:
-                        attention_mask[i,-1-expand_data_sz] = 0
-
-            for i,e in enumerate(yespi):
-                if e<1:
-                    attention_mask[i,-1] = 0
-
-                else:
-                    rd = random.random()
-                    if rd < mask_ratio_pi:
-                        attention_mask[i,-1] = 0                        
-                                      
-        else:       
-            expand_data_sz = 0
-            if expand_data is None:
-                EM = torch.cat([M[:,:1],EDisease,SEP_emb_emb,M[:,1:]],dim=1)
             else:
-                EM = torch.cat([M[:,:1],EDisease,SEP_emb_emb,M[:,1:],expand_data['emb']],dim=1)
-                expand_data_sz = expand_data['emb'].shape[1]
-
-            input_shape = EM.size()[:-1]
-            if token_type_ids is None:
-                token_type_ids = torch.zeros(input_shape, dtype=torch.long, device=self.device)
-                token_type_ids[:,2:] = 1
-
-            attention_mask = torch.ones(EM.shape[:2],device=self.device)
-
-            for i,e in enumerate(nohx):
-                if e<2:
-                    attention_mask[i,-1-expand_data_sz] = 0
-
-                else:
-                    rd = random.random()
-                    if rd < mask_ratio:
-                        attention_mask[i,-1-expand_data_sz] = 0
-
-            if expand_data is not None:
-                attention_mask[:,-1*expand_data_sz:] = expand_data['mask']                
+                rd = random.random()
+                if rd < mask_ratio:
+                    attention_mask[i,-1] = 0              
      
         output = self.EDisease_Transformer(inputs_embeds = EM,
                                            attention_mask = attention_mask,
-                                           position_ids = position_ids,
+                                           position_ids = new_position_ids,
                                            token_type_ids = token_type_ids,
                                            return_dict=True)
         last_hidden_states = output.last_hidden_state 
@@ -364,6 +339,29 @@ class GnLD(nn.Module):
         
         output = self.classifier(dim_H)
 
+        return output
+
+class PriorD(nn.Module):
+    def __init__(self,config,device):
+        super(PriorD, self).__init__()
+        self.config = config
+        self.device = device
+        self.dense = nn.Sequential(nn.Linear(config.hidden_size,4*config.hidden_size),
+                                   nn.LayerNorm(4*config.hidden_size),
+                                   nn.GELU(),
+                                   nn.Dropout(0.5),
+                                   nn.Linear(4*config.hidden_size,2*config.hidden_size),
+                                   nn.LayerNorm(2*config.hidden_size),
+                                   nn.GELU(),
+                                   nn.Dropout(0.5),
+                                   nn.LayerNorm(2*config.hidden_size),
+                                   nn.Linear(2*config.hidden_size,1),
+                                   nn.Sigmoid()
+                                   )  
+        
+    def forward(self, EDisease):
+        output = self.dense(EDisease)
+        
         return output
 
 class DIM(nn.Module):
@@ -398,20 +396,14 @@ class DIM(nn.Module):
                 M,
                 SEP_emb_emb,
                 nohx,
+                position_ids,
+                attention_mask,
                 token_type_ids=None,
                 soft=0.7,
-                DANN_alpha=1.2,
-                expand_data=None,
                 mask_ratio=0.15,
                 mode=None,
                 ptloss=False,
-                DS_model=None,
-                mix_ratio=0.0,
-                mask_ratio_pi=0.5,
                 EDisease2=None,
-                shuffle=False,
-                use_pi=False,
-                yespi=None,
                 ep=0):
         
         bs = EDisease.shape[0]
@@ -429,10 +421,22 @@ class DIM(nn.Module):
             GLD1_loss = torch.tensor(0)
 
         else:
-            #GLD0 = -1*F.softplus(-1*self.GnLD(EDisease, M, SEP_emb_emb, token_type_ids=None)).mean()
-            #GLD1 = -1*F.softplus(-1*self.GnLD(EDiseaseFake, M, SEP_emb_emb, token_type_ids=None)).mean()
-            GLD0 = self.GnLD(EDisease, M, SEP_emb_emb, nohx, token_type_ids=None, expand_data=None,DS_model=DS_model,mix_ratio=mix_ratio,use_pi=use_pi,yespi=yespi)
-            GLD1 = self.GnLD(EDiseaseFake, M, SEP_emb_emb, nohx, token_type_ids=None, expand_data=None,DS_model=DS_model,mix_ratio=mix_ratio,use_pi=use_pi,yespi=yespi)
+            GLD0 = self.GnLD(EDisease, 
+                             M, 
+                             SEP_emb_emb, 
+                             nohx,
+                             position_ids,
+                             attention_mask,
+                             token_type_ids=None,
+                             mask_ratio=mask_ratio)
+            GLD1 = self.GnLD(EDiseaseFake, 
+                             M, 
+                             SEP_emb_emb, 
+                             nohx,
+                             position_ids,
+                             attention_mask,
+                             token_type_ids=None,
+                             mask_ratio=mask_ratio)
 
             Contrast0 = torch.cat([GLD0[:,:1],GLD1[:,:1]],dim=-1)
             Contrast1 = torch.cat([GLD0[:,1:],GLD1[:,1:]],dim=-1)
@@ -456,6 +460,8 @@ class DIM(nn.Module):
                 simtrg = torch.cat([simtrg[bs:],simtrg[:bs]])
 
                 loss_simCLR = self.beta*criterion_em(simCLR,simtrg)
+            else:
+                loss_simCLR = torch.tensor(0)
                            
         #using GAN method for train prior       
         fake_domain+=(1.1*(1-soft)*torch.rand_like(fake_domain,device=self.device))
