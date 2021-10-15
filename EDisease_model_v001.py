@@ -260,7 +260,7 @@ class EDisease_Model(nn.Module):
         
         EDisease = last_hidden_states[:,0,:]
 
-        return output,EDisease, (s,input_emb,input_emb_org), (CLS_emb_emb,SEP_emb_emb),(c_emb,h_emb_mean,p_emb,yespi), inputs['stack_hx_n'],expand_data
+        return output,EDisease, (s,input_emb,input_emb_org,position_ids,attention_mask), (CLS_emb_emb,SEP_emb_emb),(c_emb,h_emb_mean,p_emb,yespi), inputs['stack_hx_n'],expand_data
 
 class classifier(nn.Module):
     def __init__(self, config):
@@ -295,7 +295,7 @@ class GnLD(nn.Module):
         self.Config.vocab_size=T_config.vocab_size
         
         self.EDisease_Transformer = BertModel(self.Config)
-        self.classifier = classifier(self.Config)
+        self.classifier = classifier(T_config)
         
     def forward(self, 
                 EDisease,
@@ -307,8 +307,9 @@ class GnLD(nn.Module):
                 token_type_ids=None, 
                 mask_ratio=0.15):
         bs = EDisease.shape[0]
-               
-        EM = torch.cat([M[:,:1],EDisease,SEP_emb_emb,M[:,1:]],dim=1)
+        eds = EDisease.unsqueeze(1)       
+        
+        EM = torch.cat([M[:,:1],eds,SEP_emb_emb,M[:,1:]],dim=1)
         
         new_position_ids = torch.cat([position_ids[:,:3],position_ids[:,1:]+10],dim=1)
 
@@ -374,7 +375,7 @@ class DIM(nn.Module):
         self.gamma = gamma
         
         self.GnLD = GnLD(T_config,device)
-        # self.PriorD = PriorD(T_config,device)
+        self.PriorD = PriorD(T_config,device)
         
     def shuffleE(self,EDiseaseFake,bs):
         t = random.randint(1,200)
@@ -387,8 +388,8 @@ class DIM(nn.Module):
                 EDiseaseFake = torch.cat([EDiseaseFake[:,s:],EDiseaseFake[:,:s]],dim=1)
         return EDiseaseFake
     
-    def target_real_fake(batch_size, device, soft):
-        t = torch.ones(batch_size,1,device=device) 
+    def target_real_fake(self, batch_size, soft):
+        t = torch.ones(batch_size,1,device=self.device) 
         return soft*t, 1 - soft*t, t, 1-t
                
     def forward(self, 
@@ -409,7 +410,7 @@ class DIM(nn.Module):
         bs = EDisease.shape[0]
         EDiseaseFake = torch.cat([EDisease[1:],EDisease[:1]],dim=0)
  
-        fake_domain, true_domain, fake_em, true_em = self.target_real_fake(batch_size=bs, device=self.device, soft=soft)
+        fake_domain, true_domain, fake_em, true_em = self.target_real_fake(batch_size=bs, soft=soft)
         
         criterion_DANN = nn.MSELoss().to(self.device)
         criterion_em = nn.CrossEntropyLoss().to(self.device)
@@ -447,21 +448,18 @@ class DIM(nn.Module):
             GLD_loss = self.alpha*(GLD0_loss+GLD1_loss)
         
         #SimCLR
-        if self.beta ==0:
-            loss_simCLR = torch.tensor(0)
+        if (self.beta >0) & (EDisease2 is not None):
+            Eall = torch.cat([EDisease.view(bs,-1),EDisease2.view(bs,-1)],dim=0)
+            nEall = F.normalize(Eall,dim=1)
+            simCLR = (1.+ep/150)*torch.mm(nEall,nEall.T)
+            simCLR = simCLR - 1e3*torch.eye(simCLR.shape[0],device=self.device)
+
+            simtrg= torch.arange(2*bs,dtype=torch.long,device=self.device)
+            simtrg = torch.cat([simtrg[bs:],simtrg[:bs]])
+
+            loss_simCLR = self.beta*criterion_em(simCLR,simtrg)
         else:
-            if EDisease2 is not None:
-                Eall = torch.cat([EDisease.view(bs,-1),EDisease2.view(bs,-1)],dim=0)
-                nEall = F.normalize(Eall,dim=1)
-                simCLR = (1.+ep/150)*torch.mm(nEall,nEall.T)
-                simCLR = simCLR - 1e3*torch.eye(simCLR.shape[0],device=self.device)
-
-                simtrg= torch.arange(2*bs,dtype=torch.long,device=self.device)
-                simtrg = torch.cat([simtrg[bs:],simtrg[:bs]])
-
-                loss_simCLR = self.beta*criterion_em(simCLR,simtrg)
-            else:
-                loss_simCLR = torch.tensor(0)
+            loss_simCLR = torch.tensor(0.)
                            
         #using GAN method for train prior       
         fake_domain+=(1.1*(1-soft)*torch.rand_like(fake_domain,device=self.device))
@@ -512,16 +510,16 @@ class DIM(nn.Module):
                                                                                  loss_simCLR.item(),
                                                                                  prior_loss.item()))          
  
-                print(EDisease[0,0,:24])
-                print(EDisease[1,0,:24])
+                print(EDisease[0,:24])
+                print(EDisease[1,:24])
                 if self.alpha >0:                 
                     print('GLD0',GLD0[:2])#,true_em,true_domain)
                     print('GLD1',GLD1[:2])#,fake_em,fake_domain)
                     print('Cts0',Contrast0[:2])#,true_em,true_domain)
                     print('Cts1',Contrast1[:2])#,fake_em,fake_domain)
                 if self.beta >0:
-                    print('Sim',simCLR[bs-1:bs+5,:8])
-                    print('Strg',simtrg[bs-4:bs+8])
+                    print('Sim',simCLR[bs-2:bs+4,:8])
+                    print('Strg',simtrg[bs-2:bs+4])
                 
         if EDisease2 is None:
             return GLD_loss+prior_loss

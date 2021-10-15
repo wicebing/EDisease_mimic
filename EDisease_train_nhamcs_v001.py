@@ -87,6 +87,7 @@ def make_trg(sample, train_cls=True):
     return trg_cls
 
 def train_NHAMCS(EDisease_Model,
+                 dim_model,
                  baseBERT,
                  dloader,
                  lr=1e-4,
@@ -99,11 +100,14 @@ def train_NHAMCS(EDisease_Model,
                  ): 
     
     EDisease_Model.to(device)
+    dim_model.to(device)
     baseBERT.to(device)
         
     model_optimizer = optim.Adam(EDisease_Model.parameters(), lr=lr)
+    model_optimizer_dim = optim.Adam(dim_model.parameters(), lr=lr)
     if parallel:
         EDisease_Model = torch.nn.DataParallel(EDisease_Model)
+        dim_model = torch.nn.DataParallel(dim_model)
         baseBERT = torch.nn.DataParallel(baseBERT)
     else:
         if device == 'cuda':
@@ -123,33 +127,43 @@ def train_NHAMCS(EDisease_Model,
         epoch_cases =0
         
         for batch_idx, sample in enumerate(dloader):
-            #print(iteration, sample['idx'])
             model_optimizer.zero_grad()
-            loss = 0
+            model_optimizer_dim.zero_grad()
+            loss = torch.tensor(0.)
             
-            output,EDisease, (s,input_emb,input_emb_org), (CLS_emb_emb,SEP_emb_emb),(c_emb,h_emb_mean,p_emb,yespi), nohx, expand_data = EDisease_Model(baseBERT,sample,noise_scale=noise_scale,mask_ratio=mask_ratio,use_pi=False,)
+            output,EDisease, (s,input_emb,input_emb_org,position_ids,attention_mask), (CLS_emb_emb,SEP_emb_emb),(c_emb,h_emb_mean,p_emb,yespi), nohx, expand_data = EDisease_Model(baseBERT,sample,noise_scale=noise_scale,mask_ratio=mask_ratio,use_pi=False,)
 
             aug2 = 2*random.random()
-            output2,EDisease2, (s,input_emb2,input_emb_org2), _,_, _, _ = EDisease_Model(baseBERT,sample,noise_scale=aug2*noise_scale,mask_ratio=mask_ratio,use_pi=False)       
+            _,EDisease2, (s,_,_,_,_),_,_,_,_ = EDisease_Model(baseBERT,sample,noise_scale=aug2*noise_scale,mask_ratio=mask_ratio,use_pi=False)       
             
             bs = len(s)            
 
-            loss_dim = dim_model(output[:,:1],
-                             input_emb_org,
-                             CLS_emb_emb,
-                             nohx,
-                             mask_ratio=mask_ratio,
-                             mode=mode,
-                             ptloss=ptloss,
-                             DS_model=DS_model,
-                             mix_ratio=mix_ratio,
-                             EDisease2=output2[:,:1],
-                             shuffle=True,
-                             use_pi=use_pi,
-                             yespi=yespi,
-                             ep=ep
-                            )            
+            mode = 'D' if batch_idx%2==0 else 'G'
+            ptloss = True if batch_idx%699==3 else False
 
+            loss_dim = dim_model(EDisease=EDisease, 
+                                 M=input_emb_org,
+                                 SEP_emb_emb=CLS_emb_emb,
+                                 nohx=nohx,
+                                 position_ids=position_ids,
+                                 attention_mask=attention_mask,
+                                 token_type_ids=None,
+                                 soft=0.7, 
+                                 mask_ratio=mask_ratio,
+                                 mode=mode, 
+                                 ptloss=ptloss, 
+                                 EDisease2=EDisease2,
+                                 ep=ep)
+            
+            loss = loss_dim
+                
+            loss.sum().backward()
+            model_optimizer.step()
+            model_optimizer_dim.step()
+                
+            with torch.no_grad():
+                epoch_loss += loss.item()*bs
+                epoch_cases += bs
 
         if ep % 1 ==0:
             save_checkpoint(checkpoint_file=checkpoint_file,
@@ -182,7 +196,7 @@ if task=='pickle_nhamcs_cls_dim_val':
 
     model_name = "bert-base-multilingual-cased"
     
-    baseBERT = ED_model.adjBERTmodel(bert_ver=model_name,fixBERT=False)
+    baseBERT = ED_model.adjBERTmodel(bert_ver=model_name,fixBERT=True)
     
     BERT_tokenizer = AutoTokenizer.from_pretrained(model_name)
     
