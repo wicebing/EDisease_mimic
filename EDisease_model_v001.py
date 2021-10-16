@@ -26,7 +26,6 @@ class adjBERTmodel(nn.Module):
         super(adjBERTmodel, self).__init__()
         
         self.Emodel = AutoModel.from_pretrained(bert_ver)
-        self.tokanizer = AutoTokenizer.from_pretrained(bert_ver)
         self.config = self.Emodel.config
         self.emb_emb = emb_emb(T_config)
 
@@ -45,18 +44,9 @@ class adjBERTmodel(nn.Module):
         
         heads = last_hidden_states[:,0,:]
         
-        CLS_emb = self.Emodel.base_model.embeddings.word_embeddings(torch.tensor([self.tokanizer.cls_token_id],device=heads.device))
-        SEP_emb = self.Emodel.base_model.embeddings.word_embeddings(torch.tensor([self.tokanizer.sep_token_id],device=heads.device))
-        PAD_emb = self.Emodel.base_model.embeddings.word_embeddings(torch.tensor([self.tokanizer.pad_token_id],device=heads.device))
-        
+
         outputs = {'heads':heads,
-                   'CLS_emb':CLS_emb,
-                   'SEP_emb':SEP_emb,
-                   'PAD_emb':PAD_emb,
                    'em_heads':self.emb_emb(heads),
-                   'em_CLS_emb':self.emb_emb(CLS_emb),
-                   'em_SEP_emb':self.emb_emb(SEP_emb),
-                   'em_PAD_emb':self.emb_emb(PAD_emb)
                    }
         
         return outputs
@@ -136,9 +126,6 @@ class EDisease_Model(nn.Module):
         
     def forward(self,
                 inputs,
-                CLS_emb_emb,
-                SEP_emb_emb,
-                PAD_emb_emb,
                 c_emb_emb,
                 h_emb_emb,
                 normalization=None, 
@@ -146,8 +133,6 @@ class EDisease_Model(nn.Module):
                 mask_ratio=0.15, 
                 mask_ratio_pi=0.5,
                 token_type_ids=None, 
-                expand_data=None,
-                use_pi=False,
                 test=False):
                
         s,sp, sm = inputs['structure'],inputs['structure_position_ids'], inputs['structure_attention_mask']
@@ -167,9 +152,17 @@ class EDisease_Model(nn.Module):
         s_emb_org = self.stc2emb(inputs=s,
                              attention_mask=sm,
                              position_ids=sp)
+
+        em_CLS = self.EDisease_Transformer.base_model.embeddings.word_embeddings(torch.tensor([1],device=self.device))
+        em_SEP = self.EDisease_Transformer.base_model.embeddings.word_embeddings(torch.tensor([2],device=self.device))
+        em_PAD = self.EDisease_Transformer.base_model.embeddings.word_embeddings(torch.tensor([0],device=self.device))
         
-        input_emb = torch.cat([CLS_emb_emb.unsqueeze(1),s_emb,c_emb_emb.unsqueeze(1),h_emb_emb.unsqueeze(1)],dim=1)
-        input_emb_org = torch.cat([CLS_emb_emb.unsqueeze(1),s_emb_org,c_emb_emb.unsqueeze(1),h_emb_emb.unsqueeze(1)],dim=1)
+        em_CLS = em_CLS.expand(c_emb_emb.shape)
+        em_SEP = em_SEP.expand(c_emb_emb.shape)
+        em_PAD = em_PAD.expand(c_emb_emb.shape)
+        
+        input_emb = torch.cat([em_CLS.unsqueeze(1),s_emb,c_emb_emb.unsqueeze(1),h_emb_emb.unsqueeze(1)],dim=1)
+        input_emb_org = torch.cat([em_CLS.unsqueeze(1),s_emb_org,c_emb_emb.unsqueeze(1),h_emb_emb.unsqueeze(1)],dim=1)
 
         nohx = inputs['stack_hx_n'] < 2
         attention_mask = torch.ones(input_emb.shape[:2],device=self.device)
@@ -256,8 +249,16 @@ class GnLD(nn.Module):
                 mask_ratio=0.15):
         bs = EDisease.shape[0]
         eds = EDisease.unsqueeze(1)       
+
+        em_CLS = self.EDisease_Transformer.base_model.embeddings.word_embeddings(torch.tensor([1],device=self.device))
+        em_SEP = self.EDisease_Transformer.base_model.embeddings.word_embeddings(torch.tensor([2],device=self.device))
+        em_PAD = self.EDisease_Transformer.base_model.embeddings.word_embeddings(torch.tensor([0],device=self.device))
         
-        EM = torch.cat([M[:,:1],eds,SEP_emb_emb.unsqueeze(1),M[:,1:]],dim=1)
+        em_CLS = em_CLS.expand(EDisease.shape)
+        em_SEP = em_SEP.expand(EDisease.shape)
+        em_PAD = em_PAD.expand(EDisease.shape)
+        
+        EM = torch.cat([M[:,:1],eds,em_SEP.unsqueeze(1),M[:,1:]],dim=1)
         
         new_position_ids = torch.cat([position_ids[:,:3],position_ids[:,1:]+10],dim=1)
 

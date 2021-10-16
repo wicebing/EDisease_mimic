@@ -29,7 +29,7 @@ except:
 
 batch_size = 8
 device = 'cuda'
-parallel = True
+parallel = False
 
 checkpoint_file = '../checkpoint_EDs/test01'
 alpha=1
@@ -86,10 +86,7 @@ def train_NHAMCS(EDisease_Model,
             c,cm,h,hm = sample['cc'],sample['mask_cc'],sample['ehx'],sample['mask_ehx']
             output = baseBERT(c.long(),cm.long())
             c_emb_emb = output['em_heads']
-            em_CLS_emb = output['em_CLS_emb'][:1]
-            em_SEP_emb = output['em_SEP_emb'][:1]
-            em_PAD_emb = output['em_PAD_emb'][:1]
-                        
+
             output = baseBERT(h.long(),hm.long())
             em_h_emb = output['em_heads']
             
@@ -104,19 +101,12 @@ def train_NHAMCS(EDisease_Model,
                     
             h_emb_emb = torch.stack(h_emb_mean_)  
 
-            CLS_emb_emb = em_CLS_emb.expand(c_emb_emb.shape)
-            SEP_emb_emb = em_SEP_emb.expand(c_emb_emb.shape)
-            PAD_emb_emb = em_PAD_emb.expand(c_emb_emb.shape)
-
             outp = EDisease_Model(sample,
-                                  CLS_emb_emb,
-                                  SEP_emb_emb,
-                                  PAD_emb_emb,
                                   c_emb_emb,
                                   h_emb_emb,
                                   noise_scale=noise_scale,
-                                  mask_ratio=mask_ratio,
-                                  use_pi=False,)
+                                  mask_ratio=mask_ratio
+                                  )
             EDisease = outp['EDisease']
             input_emb_org = outp['input_emb_org']
             position_ids = outp['position_ids']
@@ -124,12 +114,11 @@ def train_NHAMCS(EDisease_Model,
 
             aug2 = 2*random.random()
             outp2 = EDisease_Model(sample,
-                                   CLS_emb_emb,
-                                   SEP_emb_emb,
-                                   PAD_emb_emb,
                                    c_emb_emb,
                                    h_emb_emb,
-                                   noise_scale=aug2*noise_scale,mask_ratio=mask_ratio,use_pi=False)
+                                   noise_scale=aug2*noise_scale,
+                                   mask_ratio=mask_ratio
+                                   )
             EDisease2 = outp2['EDisease']
             
             bs = len(sample['structure'])            
