@@ -22,12 +22,13 @@ from EDisease_config import EDiseaseConfig, StructrualConfig
 
 
 class adjBERTmodel(nn.Module):
-    def __init__(self, bert_ver, fixBERT=True):
+    def __init__(self, bert_ver,T_config, fixBERT=True):
         super(adjBERTmodel, self).__init__()
         
         self.Emodel = AutoModel.from_pretrained(bert_ver)
+        self.tokanizer = AutoTokenizer.from_pretrained(bert_ver)
         self.config = self.Emodel.config
-
+        self.emb_emb = emb_emb(T_config)
 
         print('baseBERT PARAMETERS: ' ,count_parameters(self.Emodel))        
         if fixBERT:
@@ -44,7 +45,21 @@ class adjBERTmodel(nn.Module):
         
         heads = last_hidden_states[:,0,:]
         
-        return heads
+        CLS_emb = self.Emodel.base_model.embeddings.word_embeddings(torch.tensor([self.tokanizer.cls_token_id],device=heads.device))
+        SEP_emb = self.Emodel.base_model.embeddings.word_embeddings(torch.tensor([self.tokanizer.sep_token_id],device=heads.device))
+        PAD_emb = self.Emodel.base_model.embeddings.word_embeddings(torch.tensor([self.tokanizer.pad_token_id],device=heads.device))
+        
+        outputs = {'heads':heads,
+                   'CLS_emb':CLS_emb,
+                   'SEP_emb':SEP_emb,
+                   'PAD_emb':PAD_emb,
+                   'em_heads':self.emb_emb(heads),
+                   'em_CLS_emb':self.emb_emb(CLS_emb),
+                   'em_SEP_emb':self.emb_emb(SEP_emb),
+                   'em_PAD_emb':self.emb_emb(PAD_emb)
+                   }
+        
+        return outputs
 
 
 class float2spectrum(nn.Module):
@@ -87,9 +102,8 @@ class structure_emb(nn.Module):
         return outputs[0][:,:1,:]
 
 class emb_emb(nn.Module):
-    def __init__(self, config,device):
+    def __init__(self, config):
         super(emb_emb, self).__init__()
-        self.device = device
         self.emb_emb = nn.Sequential(nn.Linear(config.bert_hidden_size,2*config.hidden_size),
                                      nn.LayerNorm(2*config.hidden_size),
                                      nn.GELU(),
@@ -106,7 +120,6 @@ class EDisease_Model(nn.Module):
     def __init__(self,T_config,S_config,tokanizer,device='cpu'):
         super(EDisease_Model, self).__init__() 
         self.stc2emb = structure_emb(S_config,device)
-        self.emb_emb = emb_emb(T_config,device)
                     
         self.Config = BertConfig()
         self.Config.hidden_size = T_config.hidden_size
@@ -124,11 +137,11 @@ class EDisease_Model(nn.Module):
         
     def forward(self,
                 inputs,
-                CLS_emb,
-                SEP_emb,
-                PAD_emb,
-                c_emb,
-                h_emb_mean,
+                CLS_emb_emb,
+                SEP_emb_emb,
+                PAD_emb_emb,
+                c_emb_emb,
+                h_emb_emb,
                 normalization=None, 
                 noise_scale=0.001,
                 mask_ratio=0.15, 
@@ -155,22 +168,11 @@ class EDisease_Model(nn.Module):
         s_emb_org = self.stc2emb(inputs=s,
                              attention_mask=sm,
                              position_ids=sp)
-              
-        c_emb_emb = self.emb_emb(c_emb)
-        h_emb_emb = self.emb_emb(h_emb_mean)
-               
-        CLS_emb_emb = self.emb_emb(CLS_emb)
-        SEP_emb_emb = self.emb_emb(SEP_emb)
         
-        CLS_emb_emb = CLS_emb_emb.expand(c_emb_emb.shape)
-        SEP_emb_emb = SEP_emb_emb.expand(c_emb_emb.shape)
 
         CLS_emb_emb.unsqueeze_(1)
         SEP_emb_emb.unsqueeze_(1)
- 
-        p_emb = None
-        yespi = None
-        
+     
         input_emb = torch.cat([CLS_emb_emb,s_emb,c_emb_emb.unsqueeze(1),h_emb_emb.unsqueeze(1)],dim=1)
         input_emb_org = torch.cat([CLS_emb_emb,s_emb_org,c_emb_emb.unsqueeze(1),h_emb_emb.unsqueeze(1)],dim=1)
 
@@ -204,7 +206,7 @@ class EDisease_Model(nn.Module):
         
         EDisease = last_hidden_states[:,0,:]
 
-        return output,EDisease, (s,input_emb,input_emb_org,position_ids,attention_mask), (CLS_emb_emb,SEP_emb_emb),(c_emb,h_emb_mean,p_emb,yespi), inputs['stack_hx_n'],expand_data
+        return output,EDisease, (s,input_emb,input_emb_org,position_ids,attention_mask), (CLS_emb_emb,SEP_emb_emb)
 
 class classifier(nn.Module):
     def __init__(self, config):

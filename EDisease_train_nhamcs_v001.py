@@ -27,9 +27,9 @@ try:
 except:
     task = 'test_nhamcs_cls'
 
-batch_size = 96
+batch_size = 8
 device = 'cuda'
-parallel = True
+parallel = False
 
 checkpoint_file = '../checkpoint_EDs/test01'
 alpha=1
@@ -66,12 +66,9 @@ def train_NHAMCS(EDisease_Model,
         EDisease_Model = torch.nn.DataParallel(EDisease_Model)
         dim_model = torch.nn.DataParallel(dim_model)
         baseBERT = torch.nn.DataParallel(baseBERT)
-        
-        word_embeddings_MODEL = baseBERT.module.Emodel.base_model.embeddings.word_embeddings
     else:
         if device == 'cuda':
             torch.cuda.set_device(0)
-        word_embeddings_MODEL = baseBERT.Emodel.base_model.embeddings.word_embeddings
             
     total_loss = []
     
@@ -85,46 +82,51 @@ def train_NHAMCS(EDisease_Model,
             model_optimizer_dim.zero_grad()
             loss = torch.tensor(0.)
 
-            CLS_emb = word_embeddings_MODEL(torch.tensor([tokanizer.cls_token_id],device=device))
-            SEP_emb = word_embeddings_MODEL(torch.tensor([tokanizer.sep_token_id],device=device))
-            PAD_emb = word_embeddings_MODEL(torch.tensor([tokanizer.pad_token_id],device=device))
-            
             sample = {k:v.to(device) for k,v in sample.items()}
             
             c,cm,h,hm = sample['cc'],sample['mask_cc'],sample['ehx'],sample['mask_ehx']
-            c_emb = baseBERT(c.long(),cm.long())
-            h_emb = baseBERT(h.long(),hm.long())
+            output = baseBERT(c.long(),cm.long())
+            c_emb_emb = output['em_heads']
+            em_CLS_emb = output['em_CLS_emb'][:1]
+            em_SEP_emb = output['em_SEP_emb'][:1]
+            em_PAD_emb = output['em_PAD_emb'][:1]
+                        
+            output = baseBERT(h.long(),hm.long())
+            em_h_emb = output['em_heads']
             
             cumsum_hx_n = torch.cumsum(sample['stack_hx_n'],0)
             h_emb_mean_ = []
             for i,e in enumerate(cumsum_hx_n):            
                 if sample['stack_hx_n'][i]>1:
-                    h_mean = torch.mean(h_emb[1:cumsum_hx_n[i]],dim=0) if i < 1 else torch.mean(h_emb[1+cumsum_hx_n[i-1]:cumsum_hx_n[i]],dim=0)
+                    h_mean = torch.mean(em_h_emb[1:cumsum_hx_n[i]],dim=0) if i < 1 else torch.mean(em_h_emb[1+cumsum_hx_n[i-1]:cumsum_hx_n[i]],dim=0)
                     h_emb_mean_.append(h_mean)
                 else:
-                    h_emb_mean_.append(PAD_emb.view(h_emb[0].shape))
+                    h_emb_mean_.append(em_PAD_emb.view(em_h_emb[0].shape))
                     
-            h_emb_mean = torch.stack(h_emb_mean_,device=device)  
+            h_emb_emb = torch.stack(h_emb_mean_)  
 
-           
-            output,EDisease, (s,input_emb,input_emb_org,position_ids,attention_mask), (CLS_emb_emb,SEP_emb_emb),(c_emb,h_emb_mean,p_emb,yespi), nohx, expand_data = EDisease_Model(sample,
-                                                                                                                                                                                   CLS_emb,
-                                                                                                                                                                                   SEP_emb,
-                                                                                                                                                                                   PAD_emb,
-                                                                                                                                                                                   c_emb,
-                                                                                                                                                                                   h_emb_mean,
-                                                                                                                                                                                   noise_scale=noise_scale,
-                                                                                                                                                                                   mask_ratio=mask_ratio,
-                                                                                                                                                                                   use_pi=False,)
+            CLS_emb_emb = em_CLS_emb.expand(c_emb_emb.shape)
+            SEP_emb_emb = em_SEP_emb.expand(c_emb_emb.shape)
+            PAD_emb_emb = em_PAD_emb.expand(c_emb_emb.shape)
+
+            output,EDisease, (s,input_emb,input_emb_org,position_ids,attention_mask), (CLS_emb_emb,SEP_emb_emb)= EDisease_Model(sample,
+                                                                                                                                CLS_emb_emb,
+                                                                                                                                SEP_emb_emb,
+                                                                                                                                PAD_emb_emb,
+                                                                                                                                c_emb_emb,
+                                                                                                                                h_emb_emb,
+                                                                                                                                noise_scale=noise_scale,
+                                                                                                                                mask_ratio=mask_ratio,
+                                                                                                                                use_pi=False,)
 
             aug2 = 2*random.random()
-            _,EDisease2, (s,_,_,_,_),_,_,_,_ = EDisease_Model(sample,
-                                                              CLS_emb,
-                                                              SEP_emb,
-                                                              PAD_emb,
-                                                              c_emb,
-                                                              h_emb_mean,
-                                                              noise_scale=aug2*noise_scale,mask_ratio=mask_ratio,use_pi=False)       
+            _,EDisease2,_,_ = EDisease_Model(sample,
+                                             CLS_emb_emb,
+                                             SEP_emb_emb,
+                                             PAD_emb_emb,
+                                             c_emb_emb,
+                                             h_emb_emb,
+                                             noise_scale=aug2*noise_scale,mask_ratio=mask_ratio,use_pi=False)       
             
             bs = len(s)            
 
@@ -134,7 +136,7 @@ def train_NHAMCS(EDisease_Model,
             loss_dim = dim_model(EDisease=EDisease, 
                                  M=input_emb_org,
                                  SEP_emb_emb=CLS_emb_emb,
-                                 nohx=nohx,
+                                 nohx=sample['stack_hx_n'],
                                  position_ids=position_ids,
                                  attention_mask=attention_mask,
                                  token_type_ids=None,
@@ -182,13 +184,12 @@ def train_NHAMCS(EDisease_Model,
             
 if task=='nhamcs_train':
     model_name = "bert-base-multilingual-cased"
-    
-    baseBERT = ED_model.adjBERTmodel(bert_ver=model_name,fixBERT=True)
-    
-    BERT_tokenizer = AutoTokenizer.from_pretrained(model_name)
-    
     T_config = EDiseaseConfig()
     S_config = StructrualConfig()
+    
+    baseBERT = ED_model.adjBERTmodel(bert_ver=model_name,T_config=T_config,fixBERT=True)
+    
+    BERT_tokenizer = AutoTokenizer.from_pretrained(model_name)
     
     EDisease_Model = ED_model.EDisease_Model(T_config=T_config,
                                              S_config=S_config,
