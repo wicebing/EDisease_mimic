@@ -41,6 +41,7 @@ if not os.path.isdir(checkpoint_file):
     print(f' make dir {checkpoint_file}')
     
 def train_NHAMCS(EDisease_Model,
+                 stc2emb,
                  dim_model,
                  baseBERT,
                  dloader,
@@ -51,18 +52,23 @@ def train_NHAMCS(EDisease_Model,
                  mask_ratio=0.33,
                  parallel=parallel,                     
                  checkpoint_file=checkpoint_file,
+                 normalization=None
                  ): 
     
     EDisease_Model.to(device)
+    stc2emb.to(device)
     dim_model.to(device)
     baseBERT.to(device)
     
     baseBERT.eval()
         
     model_optimizer = optim.Adam(EDisease_Model.parameters(), lr=lr)
+    model_optimizer_s2e = optim.Adam(stc2emb.parameters(), lr=lr)
     model_optimizer_dim = optim.Adam(dim_model.parameters(), lr=lr)
+    
     if parallel:
         EDisease_Model = torch.nn.DataParallel(EDisease_Model)
+        stc2emb = torch.nn.DataParallel(stc2emb)
         dim_model = torch.nn.DataParallel(dim_model)
         baseBERT = torch.nn.DataParallel(baseBERT)
     else:
@@ -79,10 +85,13 @@ def train_NHAMCS(EDisease_Model,
         for batch_idx, sample in enumerate(dloader):
             model_optimizer.zero_grad()
             model_optimizer_dim.zero_grad()
+            model_optimizer_s2e.zero_grad()
+            
             loss = torch.tensor(0.)
 
             sample = {k:v.to(device) for k,v in sample.items()}
             
+            # for text data
             c,cm,h,hm = sample['cc'],sample['mask_cc'],sample['ehx'],sample['mask_ehx']
             output = baseBERT(c.long(),cm.long())
             c_emb_emb = output['em_heads']
@@ -99,11 +108,43 @@ def train_NHAMCS(EDisease_Model,
                 # else:
                 #     h_emb_mean_.append(em_PAD_emb.view(em_h_emb[0].shape))
                     
-            h_emb_emb = torch.stack(h_emb_mean_)  
+            h_emb_emb = torch.stack(h_emb_mean_)
+            
+            # for structual data
+            s,sp, sm = sample['structure'],sample['structure_position_ids'], sample['structure_attention_mask']
+                  
+            if normalization is None:
+                s_noise = s
+            else:
+                #normalization = torch.tensor(normalization).expand(s.shape).to(self.device)
+                normalization = torch.ones(s.shape).to(device)
+                noise_ = normalization*noise_scale*torch.randn_like(s,device=device)
+                s_noise = s+noise_
+                
+            
+            s_emb = stc2emb(inputs=s_noise,
+                                 attention_mask=sm,
+                                 position_ids=sp)
+            s_emb_org = stc2emb(inputs=s,
+                                 attention_mask=sm,
+                                 position_ids=sp)
+            
+            # make EDisease input data
+            things = {'s':{'emb':s_emb,
+                           'attention_mask':torch.ones(s_emb.shape[:2],device=device),
+                           'position_id':1*torch.ones(h_emb_emb.unsqueeze(1).shape[:2],device=device)
+                           },
+                      'c':{'emb':c_emb_emb.unsqueeze(1),
+                           'attention_mask':torch.ones(c_emb_emb.unsqueeze(1).shape[:2],device=device),
+                           'position_id':2*torch.ones(c_emb_emb.unsqueeze(1).shape[:2],device=device)
+                           },
+                      'h':{'emb':h_emb_emb.unsqueeze(1),
+                           'attention_mask':torch.ones(h_emb_emb.unsqueeze(1).shape[:2],device=device),
+                           'position_id':3*torch.ones(h_emb_emb.unsqueeze(1).shape[:2],device=device)
+                           },
+                      }
 
-            outp = EDisease_Model(sample,
-                                  c_emb_emb,
-                                  h_emb_emb,
+            outp = EDisease_Model(things,
                                   noise_scale=noise_scale,
                                   mask_ratio=mask_ratio
                                   )
@@ -114,8 +155,7 @@ def train_NHAMCS(EDisease_Model,
 
             aug2 = 2*random.random()
             outp2 = EDisease_Model(sample,
-                                   c_emb_emb,
-                                   h_emb_emb,
+                                   things,
                                    noise_scale=aug2*noise_scale,
                                    mask_ratio=mask_ratio
                                    )
@@ -144,6 +184,7 @@ def train_NHAMCS(EDisease_Model,
             loss.sum().backward()
             model_optimizer.step()
             model_optimizer_dim.step()
+            model_optimizer_s2e.step()
                 
             with torch.no_grad():
                 epoch_loss += loss.item()*bs
@@ -187,6 +228,8 @@ if task=='nhamcs_train':
                                              S_config=S_config,
                                              device=device)
 
+    stc2emb = ED_model.structure_emb(S_config,device)
+
     dim_model = ED_model.DIM(T_config=T_config,
                               device=device,
                               alpha=alpha,
@@ -214,6 +257,7 @@ if task=='nhamcs_train':
                          collate_fn=dataloader.collate_fn)
 
     train_NHAMCS(EDisease_Model=EDisease_Model,
+                 stc2emb=stc2emb,
                  dim_model=dim_model,
                  baseBERT=baseBERT,
                  dloader=EDEW_DL_train,

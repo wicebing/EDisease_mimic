@@ -108,9 +108,7 @@ class emb_emb(nn.Module):
 
 class EDisease_Model(nn.Module):
     def __init__(self,T_config,S_config,device='cpu'):
-        super(EDisease_Model, self).__init__() 
-        self.stc2emb = structure_emb(S_config,device)
-                    
+        super(EDisease_Model, self).__init__()                     
         self.Config = BertConfig()
         self.Config.hidden_size = T_config.hidden_size
         self.Config.num_hidden_layers = T_config.num_hidden_layers
@@ -125,64 +123,39 @@ class EDisease_Model(nn.Module):
         self.device = device
         
     def forward(self,
-                inputs,
-                c_emb_emb,
-                h_emb_emb,
+                things,
                 normalization=None, 
                 noise_scale=0.001,
                 mask_ratio=0.15, 
                 mask_ratio_pi=0.5,
                 token_type_ids=None, 
                 test=False):
-               
-        s,sp, sm = inputs['structure'],inputs['structure_position_ids'], inputs['structure_attention_mask']
-              
-        if normalization is None:
-            s_noise = s
-        else:
-            #normalization = torch.tensor(normalization).expand(s.shape).to(self.device)
-            normalization = torch.ones(s.shape).to(self.device)
-            noise_ = normalization*noise_scale*torch.randn_like(s,device=self.device)
-            s_noise = s+noise_
-            
         
-        s_emb = self.stc2emb(inputs=s_noise,
-                             attention_mask=sm,
-                             position_ids=sp)
-        s_emb_org = self.stc2emb(inputs=s,
-                             attention_mask=sm,
-                             position_ids=sp)
-
+        
+        emb_ = []
+        attention_mask_ = []
+        position_id_ = []
+        
+        for k,v in things.items():
+            emb_.append(v['emb'])
+            attention_mask_.append(v['attention_mask'])
+            position_id_.append(v['position_id'])
+            
+        bs = emb_[0].shape[0]
+               
         em_CLS = self.EDisease_Transformer.base_model.embeddings.word_embeddings(torch.tensor([1],device=self.device))
         em_SEP = self.EDisease_Transformer.base_model.embeddings.word_embeddings(torch.tensor([2],device=self.device))
         em_PAD = self.EDisease_Transformer.base_model.embeddings.word_embeddings(torch.tensor([0],device=self.device))
         
-        em_CLS = em_CLS.expand(c_emb_emb.shape)
-        em_SEP = em_SEP.expand(c_emb_emb.shape)
-        em_PAD = em_PAD.expand(c_emb_emb.shape)
+        em_CLS = em_CLS.expand([bs,em_CLS.shape[-1]])
+        em_SEP = em_SEP.expand([bs,em_SEP.shape[-1]])
+        em_PAD = em_PAD.expand([bs,em_PAD.shape[-1]])
         
-        input_emb = torch.cat([em_CLS.unsqueeze(1),s_emb,c_emb_emb.unsqueeze(1),h_emb_emb.unsqueeze(1)],dim=1)
-        input_emb_org = torch.cat([em_CLS.unsqueeze(1),s_emb_org,c_emb_emb.unsqueeze(1),h_emb_emb.unsqueeze(1)],dim=1)
-
-        nohx = inputs['stack_hx_n'] < 2
-        attention_mask = torch.ones(input_emb.shape[:2],device=self.device)
-        for i,e in enumerate(nohx):
-            if e:
-                attention_mask[i,-1] = 0
-            else:
-                if test:
-                    pass
-                else:
-                    rd = random.random()
-                    if rd < mask_ratio:
-                        attention_mask[i,-1] = 0
-
-        position_ids = torch.arange(4,device=self.device).view(1,-1)
-        position_ids = position_ids.expand(attention_mask.shape)
-
-        # extended_attention_mask = attention_mask.unsqueeze(1).unsqueeze(2)
-        # extended_attention_mask = extended_attention_mask.to(dtype=next(self.parameters()).dtype) # fp16 compatibility
-        # extended_attention_mask = (1.0 - extended_attention_mask) * -10000.0   
+        input_emb = torch.cat([em_CLS.unsqueeze(1),*emb_],dim=1)
+        input_emb_org = torch.cat([em_CLS.unsqueeze(1),*emb_],dim=1)
+        
+        attention_mask = torch.cat([torch.ones[bs,1],*attention_mask_],dim=1)
+        position_ids = torch.cat([torch.zeros[bs,1],*position_id_],dim=1) 
 
         output = self.EDisease_Transformer(inputs_embeds = input_emb,
                                            attention_mask = attention_mask,
