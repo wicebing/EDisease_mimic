@@ -122,14 +122,13 @@ class EDisease_Model(nn.Module):
         self.tokanizer = tokanizer
         self.device = device
         
-        '''
-        if fixpretrain:
-            for param in self.baseBERT.parameters():
-                param.requires_grad = False
-        '''
     def forward(self,
-                baseBERT,
                 inputs,
+                CLS_emb,
+                SEP_emb,
+                PAD_emb,
+                c_emb,
+                h_emb_mean,
                 normalization=None, 
                 noise_scale=0.001,
                 mask_ratio=0.15, 
@@ -139,12 +138,8 @@ class EDisease_Model(nn.Module):
                 use_pi=False,
                 test=False):
                
-        s,c,cm,h,hm = inputs['structure'],inputs['cc'],inputs['mask_cc'],inputs['ehx'],inputs['mask_ehx']
-        s,c,cm,h,hm = s.to(self.device),c.to(self.device),cm.to(self.device),h.to(self.device),hm.to(self.device)
-        
-        sp, sm = inputs['structure_position_ids'], inputs['structure_attention_mask']
-        sp, sm = sp.to(self.device), sm.to(self.device)
-               
+        s,sp, sm = inputs['structure'],inputs['structure_position_ids'], inputs['structure_attention_mask']
+              
         if normalization is None:
             s_noise = s
         else:
@@ -153,32 +148,14 @@ class EDisease_Model(nn.Module):
             noise_ = normalization*noise_scale*torch.randn_like(s,device=self.device)
             s_noise = s+noise_
             
-        baseBERT.eval()
+        
         s_emb = self.stc2emb(inputs=s_noise,
                              attention_mask=sm,
                              position_ids=sp)
         s_emb_org = self.stc2emb(inputs=s,
-                                 attention_mask=sm,
-                                 position_ids=sp)
-        c_emb = baseBERT(c.long(),cm.long())
-        h_emb = baseBERT(h.long(),hm.long())
-        
-        CLS_emb = baseBERT.Emodel.base_model.embeddings.word_embeddings(torch.tensor([self.tokanizer.cls_token_id],device=self.device))
-        SEP_emb = baseBERT.Emodel.base_model.embeddings.word_embeddings(torch.tensor([self.tokanizer.sep_token_id],device=self.device))
-        PAD_emb = baseBERT.Emodel.base_model.embeddings.word_embeddings(torch.tensor([self.tokanizer.pad_token_id],device=self.device))
-                
-        cumsum_hx_n = torch.cumsum(inputs['stack_hx_n'],0)
-        h_emb_mean_ = []
-        for i,e in enumerate(cumsum_hx_n):            
-            if inputs['stack_hx_n'][i]>1:
-                h_mean = torch.mean(h_emb[1:cumsum_hx_n[i]],dim=0) if i < 1 else torch.mean(h_emb[1+cumsum_hx_n[i-1]:cumsum_hx_n[i]],dim=0)
-                h_emb_mean_.append(h_mean)
-            else:
-                h_emb_mean_.append(PAD_emb.view(h_emb[0].shape))
-                
-        h_emb_mean = torch.stack(h_emb_mean_)
-        h_emb_mean.to(self.device)
-               
+                             attention_mask=sm,
+                             position_ids=sp)
+              
         c_emb_emb = self.emb_emb(c_emb)
         h_emb_emb = self.emb_emb(h_emb_mean)
                
@@ -190,58 +167,28 @@ class EDisease_Model(nn.Module):
 
         CLS_emb_emb.unsqueeze_(1)
         SEP_emb_emb.unsqueeze_(1)
+ 
+        p_emb = None
+        yespi = None
+        
+        input_emb = torch.cat([CLS_emb_emb,s_emb,c_emb_emb.unsqueeze(1),h_emb_emb.unsqueeze(1)],dim=1)
+        input_emb_org = torch.cat([CLS_emb_emb,s_emb_org,c_emb_emb.unsqueeze(1),h_emb_emb.unsqueeze(1)],dim=1)
 
-        if use_pi:
-            pi,pm,pil,yespi = inputs['pi'],inputs['mask_pi'],inputs['origin_pi_length'],inputs['yesPI']
-            pi,pm,pil,yespi = pi.to(self.device),pm.to(self.device),pil.to(self.device),yespi.to(self.device)       
-            p_emb = baseBERT(pi.long(),pm.long())
-            
-            p_emb_emb = self.emb_emb(p_emb)
-
-            expand_data_sz = 1
-            input_emb = torch.cat([CLS_emb_emb,s_emb,c_emb_emb.unsqueeze(1),h_emb_emb.unsqueeze(1),p_emb_emb.unsqueeze(1)],dim=1)
-            input_emb_org = torch.cat([CLS_emb_emb,s_emb_org,c_emb_emb.unsqueeze(1),h_emb_emb.unsqueeze(1),p_emb_emb.unsqueeze(1)],dim=1)
-            
-            nohx = inputs['stack_hx_n'] < 2
-            attention_mask = torch.ones(input_emb.shape[:2],device=self.device)
-            for i,e in enumerate(nohx):
-                if e:
-                    attention_mask[i,-1-expand_data_sz] = 0
+        nohx = inputs['stack_hx_n'] < 2
+        attention_mask = torch.ones(input_emb.shape[:2],device=self.device)
+        for i,e in enumerate(nohx):
+            if e:
+                attention_mask[i,-1] = 0
+            else:
+                if test:
+                    pass
                 else:
                     rd = random.random()
                     if rd < mask_ratio:
-                        attention_mask[i,-1-expand_data_sz] = 0            
-            
-            nopi = inputs['yesPI'] < 1
-            for i,e in enumerate(nopi):
-                if e:
-                    attention_mask[i,-1] = 0
-                else:
-                    rd = random.random()
-                    if rd < mask_ratio_pi:
-                        attention_mask[i,-1] = 0                               
-        else:  
-            p_emb = None
-            yespi = None
-            
-            input_emb = torch.cat([CLS_emb_emb,s_emb,c_emb_emb.unsqueeze(1),h_emb_emb.unsqueeze(1)],dim=1)
-            input_emb_org = torch.cat([CLS_emb_emb,s_emb_org,c_emb_emb.unsqueeze(1),h_emb_emb.unsqueeze(1)],dim=1)
+                        attention_mask[i,-1] = 0
 
-            nohx = inputs['stack_hx_n'] < 2
-            attention_mask = torch.ones(input_emb.shape[:2],device=self.device)
-            for i,e in enumerate(nohx):
-                if e:
-                    attention_mask[i,-1] = 0
-                else:
-                    if test:
-                        pass
-                    else:
-                        rd = random.random()
-                        if rd < mask_ratio:
-                            attention_mask[i,-1] = 0
-
-            position_ids = torch.arange(4,device=self.device).view(1,-1)
-            position_ids = position_ids.expand(attention_mask.shape)
+        position_ids = torch.arange(4,device=self.device).view(1,-1)
+        position_ids = position_ids.expand(attention_mask.shape)
 
         # extended_attention_mask = attention_mask.unsqueeze(1).unsqueeze(2)
         # extended_attention_mask = extended_attention_mask.to(dtype=next(self.parameters()).dtype) # fp16 compatibility

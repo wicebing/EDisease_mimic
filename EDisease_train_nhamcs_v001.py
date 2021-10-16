@@ -27,7 +27,7 @@ try:
 except:
     task = 'test_nhamcs_cls'
 
-batch_size = 16
+batch_size = 96
 device = 'cuda'
 parallel = True
 
@@ -43,6 +43,7 @@ if not os.path.isdir(checkpoint_file):
 def train_NHAMCS(EDisease_Model,
                  dim_model,
                  baseBERT,
+                 tokanizer,
                  dloader,
                  lr=1e-4,
                  epoch=100,
@@ -56,6 +57,8 @@ def train_NHAMCS(EDisease_Model,
     EDisease_Model.to(device)
     dim_model.to(device)
     baseBERT.to(device)
+    
+    baseBERT.eval()
         
     model_optimizer = optim.Adam(EDisease_Model.parameters(), lr=lr)
     model_optimizer_dim = optim.Adam(dim_model.parameters(), lr=lr)
@@ -63,9 +66,12 @@ def train_NHAMCS(EDisease_Model,
         EDisease_Model = torch.nn.DataParallel(EDisease_Model)
         dim_model = torch.nn.DataParallel(dim_model)
         baseBERT = torch.nn.DataParallel(baseBERT)
+        
+        word_embeddings_MODEL = baseBERT.module.Emodel.base_model.embeddings.word_embeddings
     else:
         if device == 'cuda':
             torch.cuda.set_device(0)
+        word_embeddings_MODEL = baseBERT.Emodel.base_model.embeddings.word_embeddings
             
     total_loss = []
     
@@ -78,16 +84,52 @@ def train_NHAMCS(EDisease_Model,
             model_optimizer.zero_grad()
             model_optimizer_dim.zero_grad()
             loss = torch.tensor(0.)
+
+            CLS_emb = word_embeddings_MODEL(torch.tensor([tokanizer.cls_token_id],device=device))
+            SEP_emb = word_embeddings_MODEL(torch.tensor([tokanizer.sep_token_id],device=device))
+            PAD_emb = word_embeddings_MODEL(torch.tensor([tokanizer.pad_token_id],device=device))
             
-            output,EDisease, (s,input_emb,input_emb_org,position_ids,attention_mask), (CLS_emb_emb,SEP_emb_emb),(c_emb,h_emb_mean,p_emb,yespi), nohx, expand_data = EDisease_Model(baseBERT,sample,noise_scale=noise_scale,mask_ratio=mask_ratio,use_pi=False,)
+            sample = {k:v.to(device) for k,v in sample.items()}
+            
+            c,cm,h,hm = sample['cc'],sample['mask_cc'],sample['ehx'],sample['mask_ehx']
+            c_emb = baseBERT(c.long(),cm.long())
+            h_emb = baseBERT(h.long(),hm.long())
+            
+            cumsum_hx_n = torch.cumsum(sample['stack_hx_n'],0)
+            h_emb_mean_ = []
+            for i,e in enumerate(cumsum_hx_n):            
+                if sample['stack_hx_n'][i]>1:
+                    h_mean = torch.mean(h_emb[1:cumsum_hx_n[i]],dim=0) if i < 1 else torch.mean(h_emb[1+cumsum_hx_n[i-1]:cumsum_hx_n[i]],dim=0)
+                    h_emb_mean_.append(h_mean)
+                else:
+                    h_emb_mean_.append(PAD_emb.view(h_emb[0].shape))
+                    
+            h_emb_mean = torch.stack(h_emb_mean_,device=device)  
+
+           
+            output,EDisease, (s,input_emb,input_emb_org,position_ids,attention_mask), (CLS_emb_emb,SEP_emb_emb),(c_emb,h_emb_mean,p_emb,yespi), nohx, expand_data = EDisease_Model(sample,
+                                                                                                                                                                                   CLS_emb,
+                                                                                                                                                                                   SEP_emb,
+                                                                                                                                                                                   PAD_emb,
+                                                                                                                                                                                   c_emb,
+                                                                                                                                                                                   h_emb_mean,
+                                                                                                                                                                                   noise_scale=noise_scale,
+                                                                                                                                                                                   mask_ratio=mask_ratio,
+                                                                                                                                                                                   use_pi=False,)
 
             aug2 = 2*random.random()
-            _,EDisease2, (s,_,_,_,_),_,_,_,_ = EDisease_Model(baseBERT,sample,noise_scale=aug2*noise_scale,mask_ratio=mask_ratio,use_pi=False)       
+            _,EDisease2, (s,_,_,_,_),_,_,_,_ = EDisease_Model(sample,
+                                                              CLS_emb,
+                                                              SEP_emb,
+                                                              PAD_emb,
+                                                              c_emb,
+                                                              h_emb_mean,
+                                                              noise_scale=aug2*noise_scale,mask_ratio=mask_ratio,use_pi=False)       
             
             bs = len(s)            
 
             mode = 'D' if batch_idx%2==0 else 'G'
-            ptloss = True if batch_idx%699==3 else False
+            ptloss = True if batch_idx%99==3 else False
 
             loss_dim = dim_model(EDisease=EDisease, 
                                  M=input_emb_org,
@@ -182,6 +224,7 @@ if task=='nhamcs_train':
     train_NHAMCS(EDisease_Model=EDisease_Model,
                  dim_model=dim_model,
                  baseBERT=baseBERT,
+                 tokanizer=BERT_tokenizer,
                  dloader=EDEW_DL_train,
                  lr=1e-5,
                  epoch=100,
