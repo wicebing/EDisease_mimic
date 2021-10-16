@@ -219,30 +219,23 @@ class EDisease_Model(nn.Module):
         else:  
             p_emb = None
             yespi = None
-            expand_data_sz = 0
-            if expand_data is None:
-                input_emb = torch.cat([CLS_emb_emb,s_emb,c_emb_emb.unsqueeze(1),h_emb_emb.unsqueeze(1)],dim=1)
-                input_emb_org = torch.cat([CLS_emb_emb,s_emb_org,c_emb_emb.unsqueeze(1),h_emb_emb.unsqueeze(1)],dim=1)
-            else:
-                input_emb = torch.cat([CLS_emb_emb,s_emb,c_emb_emb.unsqueeze(1),h_emb_emb.unsqueeze(1),expand_data['emb']],dim=1)
-                expand_data_sz = expand_data['emb'].shape[1]
-                input_emb_org = torch.cat([CLS_emb_emb,s_emb_org,c_emb_emb.unsqueeze(1),h_emb_emb.unsqueeze(1),expand_data['emb']],dim=1)
-                expand_data_sz = expand_data['emb'].shape[1]
+            
+            input_emb = torch.cat([CLS_emb_emb,s_emb,c_emb_emb.unsqueeze(1),h_emb_emb.unsqueeze(1)],dim=1)
+            input_emb_org = torch.cat([CLS_emb_emb,s_emb_org,c_emb_emb.unsqueeze(1),h_emb_emb.unsqueeze(1)],dim=1)
 
             nohx = inputs['stack_hx_n'] < 2
             attention_mask = torch.ones(input_emb.shape[:2],device=self.device)
             for i,e in enumerate(nohx):
                 if e:
-                    attention_mask[i,-1-expand_data_sz] = 0
+                    attention_mask[i,-1] = 0
                 else:
                     if test:
                         pass
                     else:
                         rd = random.random()
                         if rd < mask_ratio:
-                            attention_mask[i,-1-expand_data_sz] = 0
-            if expand_data is not None:
-                attention_mask[:,-1*expand_data_sz:] = expand_data['mask']
+                            attention_mask[i,-1] = 0
+
             position_ids = torch.arange(4,device=self.device).view(1,-1)
             position_ids = position_ids.expand(attention_mask.shape)
 
