@@ -48,19 +48,22 @@ class adjBERTmodel(nn.Module):
 
 
 class float2spectrum(nn.Module):
-    def __init__(self, embedding_size):
+    def __init__(self, embedding_size,device):
         super(float2spectrum, self).__init__()
-        self.thida = torch.linspace(0,2*math.pi,int(embedding_size/2))
+        self.device = device
+        self.embedding_size = embedding_size
         
     def forward(self, tensor):
-        k_thida = torch.einsum("nm,k->nmk", tensor, self.thida)
+        thida = torch.linspace(0,2*math.pi,int(self.embedding_size/2),device=self.device)
+        k_thida = torch.einsum("nm,k->nmk", tensor, thida)
         emb_x = torch.cat((k_thida.cos(),k_thida.sin()), dim=-1)
         return emb_x        
 
 class structure_emb(nn.Module):
-    def __init__(self, config):
+    def __init__(self, config,device):
         super(structure_emb, self).__init__()
-        self.float2emb = float2spectrum(config.hidden_size)
+        self.device = device
+        self.float2emb = float2spectrum(config.hidden_size,device)
         
         self.Config = BertConfig()
         self.Config.hidden_size = config.hidden_size
@@ -84,8 +87,9 @@ class structure_emb(nn.Module):
         return outputs[0][:,:1,:]
 
 class emb_emb(nn.Module):
-    def __init__(self, config):
+    def __init__(self, config,device):
         super(emb_emb, self).__init__()
+        self.device = device
         self.emb_emb = nn.Sequential(nn.Linear(config.bert_hidden_size,2*config.hidden_size),
                                      nn.LayerNorm(2*config.hidden_size),
                                      nn.GELU(),
@@ -101,8 +105,8 @@ class emb_emb(nn.Module):
 class EDisease_Model(nn.Module):
     def __init__(self,T_config,S_config,tokanizer,device='cpu'):
         super(EDisease_Model, self).__init__() 
-        self.stc2emb = structure_emb(S_config)
-        self.emb_emb = emb_emb(T_config)
+        self.stc2emb = structure_emb(S_config,device)
+        self.emb_emb = emb_emb(T_config,device)
                     
         self.Config = BertConfig()
         self.Config.hidden_size = T_config.hidden_size
