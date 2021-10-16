@@ -96,8 +96,8 @@ def train_NHAMCS(EDisease_Model,
                 if sample['stack_hx_n'][i]>1:
                     h_mean = torch.mean(em_h_emb[1:cumsum_hx_n[i]],dim=0) if i < 1 else torch.mean(em_h_emb[1+cumsum_hx_n[i-1]:cumsum_hx_n[i]],dim=0)
                     h_emb_mean_.append(h_mean)
-                else:
-                    h_emb_mean_.append(em_PAD_emb.view(em_h_emb[0].shape))
+                # else:
+                #     h_emb_mean_.append(em_PAD_emb.view(em_h_emb[0].shape))
                     
             h_emb_emb = torch.stack(h_emb_mean_)  
 
@@ -128,7 +128,6 @@ def train_NHAMCS(EDisease_Model,
 
             loss_dim = dim_model(EDisease=EDisease, 
                                  M=input_emb_org,
-                                 SEP_emb_emb=CLS_emb_emb,
                                  nohx=sample['stack_hx_n'],
                                  position_ids=position_ids,
                                  attention_mask=attention_mask,

@@ -241,7 +241,6 @@ class GnLD(nn.Module):
     def forward(self, 
                 EDisease,
                 M, 
-                SEP_emb_emb, 
                 nohx,
                 position_ids,
                 attention_mask,
@@ -344,7 +343,6 @@ class DIM(nn.Module):
     def forward(self, 
                 EDisease,
                 M,
-                SEP_emb_emb,
                 nohx,
                 position_ids,
                 attention_mask,
@@ -373,7 +371,6 @@ class DIM(nn.Module):
         else:
             GLD0 = self.GnLD(EDisease, 
                              M, 
-                             SEP_emb_emb, 
                              nohx,
                              position_ids,
                              attention_mask,
@@ -381,7 +378,6 @@ class DIM(nn.Module):
                              mask_ratio=mask_ratio)
             GLD1 = self.GnLD(EDiseaseFake, 
                              M, 
-                             SEP_emb_emb, 
                              nohx,
                              position_ids,
                              attention_mask,
