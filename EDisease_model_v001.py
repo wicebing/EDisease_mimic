@@ -117,7 +117,7 @@ class emb_emb(nn.Module):
         return pooled_output    
 
 class EDisease_Model(nn.Module):
-    def __init__(self,T_config,S_config,tokanizer,device='cpu'):
+    def __init__(self,T_config,S_config,device='cpu'):
         super(EDisease_Model, self).__init__() 
         self.stc2emb = structure_emb(S_config,device)
                     
@@ -132,7 +132,6 @@ class EDisease_Model(nn.Module):
         
         self.EDisease_Transformer = BertModel(self.Config)
 
-        self.tokanizer = tokanizer
         self.device = device
         
     def forward(self,
@@ -169,12 +168,8 @@ class EDisease_Model(nn.Module):
                              attention_mask=sm,
                              position_ids=sp)
         
-
-        CLS_emb_emb.unsqueeze_(1)
-        SEP_emb_emb.unsqueeze_(1)
-     
-        input_emb = torch.cat([CLS_emb_emb,s_emb,c_emb_emb.unsqueeze(1),h_emb_emb.unsqueeze(1)],dim=1)
-        input_emb_org = torch.cat([CLS_emb_emb,s_emb_org,c_emb_emb.unsqueeze(1),h_emb_emb.unsqueeze(1)],dim=1)
+        input_emb = torch.cat([CLS_emb_emb.unsqueeze(1),s_emb,c_emb_emb.unsqueeze(1),h_emb_emb.unsqueeze(1)],dim=1)
+        input_emb_org = torch.cat([CLS_emb_emb.unsqueeze(1),s_emb_org,c_emb_emb.unsqueeze(1),h_emb_emb.unsqueeze(1)],dim=1)
 
         nohx = inputs['stack_hx_n'] < 2
         attention_mask = torch.ones(input_emb.shape[:2],device=self.device)
@@ -205,8 +200,15 @@ class EDisease_Model(nn.Module):
         last_hidden_states = output.last_hidden_state 
         
         EDisease = last_hidden_states[:,0,:]
+        
+        outp ={'output':output,
+               'EDisease':EDisease,
+               'input_emb_org':input_emb_org,
+               'position_ids':position_ids,
+               'attention_mask':attention_mask
+               }
 
-        return output,EDisease, (s,input_emb,input_emb_org,position_ids,attention_mask), (CLS_emb_emb,SEP_emb_emb)
+        return outp
 
 class classifier(nn.Module):
     def __init__(self, config):
@@ -255,7 +257,7 @@ class GnLD(nn.Module):
         bs = EDisease.shape[0]
         eds = EDisease.unsqueeze(1)       
         
-        EM = torch.cat([M[:,:1],eds,SEP_emb_emb,M[:,1:]],dim=1)
+        EM = torch.cat([M[:,:1],eds,SEP_emb_emb.unsqueeze(1),M[:,1:]],dim=1)
         
         new_position_ids = torch.cat([position_ids[:,:3],position_ids[:,1:]+10],dim=1)
 

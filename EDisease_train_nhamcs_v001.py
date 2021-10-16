@@ -29,7 +29,7 @@ except:
 
 batch_size = 8
 device = 'cuda'
-parallel = False
+parallel = True
 
 checkpoint_file = '../checkpoint_EDs/test01'
 alpha=1
@@ -43,7 +43,6 @@ if not os.path.isdir(checkpoint_file):
 def train_NHAMCS(EDisease_Model,
                  dim_model,
                  baseBERT,
-                 tokanizer,
                  dloader,
                  lr=1e-4,
                  epoch=100,
@@ -109,26 +108,31 @@ def train_NHAMCS(EDisease_Model,
             SEP_emb_emb = em_SEP_emb.expand(c_emb_emb.shape)
             PAD_emb_emb = em_PAD_emb.expand(c_emb_emb.shape)
 
-            output,EDisease, (s,input_emb,input_emb_org,position_ids,attention_mask), (CLS_emb_emb,SEP_emb_emb)= EDisease_Model(sample,
-                                                                                                                                CLS_emb_emb,
-                                                                                                                                SEP_emb_emb,
-                                                                                                                                PAD_emb_emb,
-                                                                                                                                c_emb_emb,
-                                                                                                                                h_emb_emb,
-                                                                                                                                noise_scale=noise_scale,
-                                                                                                                                mask_ratio=mask_ratio,
-                                                                                                                                use_pi=False,)
+            outp = EDisease_Model(sample,
+                                  CLS_emb_emb,
+                                  SEP_emb_emb,
+                                  PAD_emb_emb,
+                                  c_emb_emb,
+                                  h_emb_emb,
+                                  noise_scale=noise_scale,
+                                  mask_ratio=mask_ratio,
+                                  use_pi=False,)
+            EDisease = outp['EDisease']
+            input_emb_org = outp['input_emb_org']
+            position_ids = outp['position_ids']
+            attention_mask = outp['attention_mask']
 
             aug2 = 2*random.random()
-            _,EDisease2,_,_ = EDisease_Model(sample,
-                                             CLS_emb_emb,
-                                             SEP_emb_emb,
-                                             PAD_emb_emb,
-                                             c_emb_emb,
-                                             h_emb_emb,
-                                             noise_scale=aug2*noise_scale,mask_ratio=mask_ratio,use_pi=False)       
+            outp2 = EDisease_Model(sample,
+                                   CLS_emb_emb,
+                                   SEP_emb_emb,
+                                   PAD_emb_emb,
+                                   c_emb_emb,
+                                   h_emb_emb,
+                                   noise_scale=aug2*noise_scale,mask_ratio=mask_ratio,use_pi=False)
+            EDisease2 = outp2['EDisease']
             
-            bs = len(s)            
+            bs = len(sample['structure'])            
 
             mode = 'D' if batch_idx%2==0 else 'G'
             ptloss = True if batch_idx%99==3 else False
@@ -193,7 +197,6 @@ if task=='nhamcs_train':
     
     EDisease_Model = ED_model.EDisease_Model(T_config=T_config,
                                              S_config=S_config,
-                                             tokanizer=BERT_tokenizer,
                                              device=device)
 
     dim_model = ED_model.DIM(T_config=T_config,
@@ -225,7 +228,6 @@ if task=='nhamcs_train':
     train_NHAMCS(EDisease_Model=EDisease_Model,
                  dim_model=dim_model,
                  baseBERT=baseBERT,
-                 tokanizer=BERT_tokenizer,
                  dloader=EDEW_DL_train,
                  lr=1e-5,
                  epoch=100,
