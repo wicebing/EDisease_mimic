@@ -157,8 +157,6 @@ class EDisease_Model(nn.Module):
         attention_mask = torch.cat([torch.ones([bs,1],device=self.device),*attention_mask_],dim=1)
         position_ids = torch.cat([torch.zeros([bs,1],device=self.device),*position_id_],dim=1) 
         
-        print(111111,input_emb.shape, attention_mask.shape, position_ids.shape)
-
         output = self.EDisease_Transformer(inputs_embeds = input_emb,
                                            attention_mask = attention_mask.long(),
                                            position_ids = position_ids.long(),
