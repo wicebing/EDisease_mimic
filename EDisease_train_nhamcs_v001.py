@@ -29,7 +29,7 @@ except:
 
 batch_size = 8
 device = 'cuda'
-parallel = False
+parallel = True
 
 checkpoint_file = '../checkpoint_EDs/test01'
 alpha=1

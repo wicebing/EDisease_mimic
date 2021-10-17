@@ -119,6 +119,8 @@ class EDisease_Model(nn.Module):
         self.Config.vocab_size=T_config.vocab_size
         
         self.EDisease_Transformer = BertModel(self.Config)
+        
+        self.EDs_embeddings = nn.Embedding(T_config.vocab_size, T_config.hidden_size)
 
         self.device = device
         
@@ -143,9 +145,9 @@ class EDisease_Model(nn.Module):
             
         bs = emb_[0].shape[0]
                
-        em_CLS = self.EDisease_Transformer.base_model.embeddings.word_embeddings(torch.tensor([1],device=self.device))
-        em_SEP = self.EDisease_Transformer.base_model.embeddings.word_embeddings(torch.tensor([2],device=self.device))
-        em_PAD = self.EDisease_Transformer.base_model.embeddings.word_embeddings(torch.tensor([0],device=self.device))
+        em_CLS = self.EDs_embeddings(torch.tensor([1],device=self.device))
+        em_SEP = self.EDs_embeddings(torch.tensor([2],device=self.device))
+        em_PAD = self.EDs_embeddings(torch.tensor([0],device=self.device))
         
         em_CLS = em_CLS.expand([bs,em_CLS.shape[-1]])
         em_SEP = em_SEP.expand([bs,em_SEP.shape[-1]])
