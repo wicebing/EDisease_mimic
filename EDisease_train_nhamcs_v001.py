@@ -29,7 +29,7 @@ except:
 
 batch_size = 8
 device = 'cuda'
-parallel = True
+parallel = False
 
 checkpoint_file = '../checkpoint_EDs/test01'
 alpha=1
@@ -224,13 +224,12 @@ if task=='nhamcs_train':
     BERT_tokenizer = AutoTokenizer.from_pretrained(model_name)
     
     EDisease_Model = ED_model.EDisease_Model(T_config=T_config,
-                                             S_config=S_config,
-                                             device=device)
+                                             S_config=S_config
+                                             )
 
-    stc2emb = ED_model.structure_emb(S_config,device)
+    stc2emb = ED_model.structure_emb(S_config)
 
     dim_model = ED_model.DIM(T_config=T_config,
-                              device=device,
                               alpha=alpha,
                               beta=beta,
                               gamma=gamma)
