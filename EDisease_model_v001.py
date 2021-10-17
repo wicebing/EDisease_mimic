@@ -154,13 +154,14 @@ class EDisease_Model(nn.Module):
         input_emb = torch.cat([em_CLS.unsqueeze(1),*emb_],dim=1)
         input_emb_org = torch.cat([em_CLS.unsqueeze(1),*emb_],dim=1)
         
-        attention_mask = torch.cat([torch.ones[bs,1],*attention_mask_],dim=1)
-        position_ids = torch.cat([torch.zeros[bs,1],*position_id_],dim=1) 
+        attention_mask = torch.cat([torch.ones([bs,1],device=self.device),*attention_mask_],dim=1)
+        position_ids = torch.cat([torch.zeros([bs,1],device=self.device),*position_id_],dim=1) 
+        
+        print(111111,input_emb.shape, attention_mask.shape, position_ids.shape)
 
         output = self.EDisease_Transformer(inputs_embeds = input_emb,
-                                           attention_mask = attention_mask,
-                                           position_ids = position_ids,
-                                           token_type_ids = token_type_ids,
+                                           attention_mask = attention_mask.long(),
+                                           position_ids = position_ids.long(),
                                            return_dict=True)
 
         last_hidden_states = output.last_hidden_state 

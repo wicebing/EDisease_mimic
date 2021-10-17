@@ -154,8 +154,7 @@ def train_NHAMCS(EDisease_Model,
             attention_mask = outp['attention_mask']
 
             aug2 = 2*random.random()
-            outp2 = EDisease_Model(sample,
-                                   things,
+            outp2 = EDisease_Model(things,
                                    noise_scale=aug2*noise_scale,
                                    mask_ratio=mask_ratio
                                    )
