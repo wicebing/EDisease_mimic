@@ -143,14 +143,18 @@ class EDisease_Model(nn.Module):
         bs = emb_[0].shape[0]
         
         device = emb_[0].device
-                       
-        em_CLS = self.EDs_embeddings(torch.tensor([1],device=device))
-        em_SEP = self.EDs_embeddings(torch.tensor([2],device=device))
-        em_PAD = self.EDs_embeddings(torch.tensor([0],device=device))
         
-        em_CLS = em_CLS.expand([bs,em_CLS.shape[-1]])
-        em_SEP = em_SEP.expand([bs,em_SEP.shape[-1]])
-        em_PAD = em_PAD.expand([bs,em_PAD.shape[-1]])
+        # print(111111,device)
+                       
+        em_CLS = self.EDs_embeddings(1*torch.ones((bs, 1), device=device, dtype=torch.long))
+        em_SEP = self.EDs_embeddings(2*torch.ones((bs, 1), device=device, dtype=torch.long))
+        em_PAD = self.EDs_embeddings(0*torch.ones((bs, 1), device=device, dtype=torch.long))
+        
+        # em_CLS = em_CLS.expand([bs,em_CLS.shape[-1]])
+        # em_SEP = em_SEP.expand([bs,em_SEP.shape[-1]])
+        # em_PAD = em_PAD.expand([bs,em_PAD.shape[-1]])
+        
+        print(111111,em_CLS.shape)
         
         input_emb = torch.cat([em_CLS.unsqueeze(1),*emb_],dim=1)
         input_emb_org = torch.cat([em_CLS.unsqueeze(1),*emb_],dim=1)
@@ -328,7 +332,7 @@ class DIM(nn.Module):
         bs = EDisease.shape[0]
         EDiseaseFake = torch.cat([EDisease[1:],EDisease[:1]],dim=0)
  
-        fake_domain, true_domain, fake_em, true_em = self.target_real_fake(batch_size=bs, soft=soft)
+        fake_domain, true_domain, fake_em, true_em = self.target_real_fake(batch_size=bs, soft=soft,device=device)
         
         criterion_DANN = nn.MSELoss().to(device)
         criterion_em = nn.CrossEntropyLoss().to(device)
