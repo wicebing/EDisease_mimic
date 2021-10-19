@@ -184,15 +184,10 @@ def train_NHAMCS(EDisease_Model,
 
             loss_dim = dim_model(things=things,
                                  things_e=things_e,
-                                 nohx=sample['stack_hx_n'],
-                                 position_ids=position_ids.long(),
-                                 attention_mask=attention_mask.long(),
-                                 token_type_ids=None,
                                  soft=0.7, 
                                  mask_ratio=mask_ratio,
                                  mode=mode, 
-                                 ptloss=ptloss, 
-                                 EDisease2=EDisease2,
+                                 ptloss=ptloss,
                                  ep=ep)
             
             loss = loss_dim

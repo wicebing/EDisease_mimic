@@ -231,7 +231,7 @@ class GnLD(nn.Module):
         e_attention_mask_ = []
         e_position_id_ = []
         
-        for k,v in things.items():
+        for k,v in things_e.items():
             if fake:
                 e_emb_.append(v['embf'])
             else:
@@ -262,9 +262,9 @@ class GnLD(nn.Module):
             token_type_ids[:,2:] = 1
                
         output = self.EDisease_Transformer(inputs_embeds = input_emb,
-                                           attention_mask = attention_mask,
-                                           position_ids = position_ids,
-                                           token_type_ids = token_type_ids,
+                                           attention_mask = attention_mask.long(),
+                                           position_ids = position_ids.long(),
+                                           token_type_ids = token_type_ids.long(),
                                            return_dict=True)
         last_hidden_states = output.last_hidden_state 
         
@@ -329,7 +329,6 @@ class DIM(nn.Module):
                 mask_ratio=0.15,
                 mode=None,
                 ptloss=False,
-                EDisease2=None,
                 ep=0):
         
         EDisease = things_e['e']['emb'].squeeze(1)
