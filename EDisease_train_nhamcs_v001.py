@@ -42,6 +42,7 @@ if not os.path.isdir(checkpoint_file):
     
 def train_NHAMCS(EDisease_Model,
                  stc2emb,
+                 emb_emb,
                  dim_model,
                  baseBERT,
                  dloader,
@@ -57,6 +58,7 @@ def train_NHAMCS(EDisease_Model,
     
     EDisease_Model.to(device)
     stc2emb.to(device)
+    emb_emb.to(device)
     dim_model.to(device)
     baseBERT.to(device)
     
@@ -64,11 +66,13 @@ def train_NHAMCS(EDisease_Model,
         
     model_optimizer = optim.Adam(EDisease_Model.parameters(), lr=lr)
     model_optimizer_s2e = optim.Adam(stc2emb.parameters(), lr=lr)
+    model_optimizer_e2e = optim.Adam(emb_emb.parameters(), lr=lr)
     model_optimizer_dim = optim.Adam(dim_model.parameters(), lr=lr)
     
     if parallel:
         EDisease_Model = torch.nn.DataParallel(EDisease_Model)
         stc2emb = torch.nn.DataParallel(stc2emb)
+        emb_emb = torch.nn.DataParallel(emb_emb)
         dim_model = torch.nn.DataParallel(dim_model)
         baseBERT = torch.nn.DataParallel(baseBERT)
     else:
@@ -86,6 +90,7 @@ def train_NHAMCS(EDisease_Model,
             model_optimizer.zero_grad()
             model_optimizer_dim.zero_grad()
             model_optimizer_s2e.zero_grad()
+            model_optimizer_e2e.zero_grad()
             
             loss = torch.tensor(0.)
 
@@ -94,10 +99,13 @@ def train_NHAMCS(EDisease_Model,
             # for text data
             c,cm,h,hm = sample['cc'],sample['mask_cc'],sample['ehx'],sample['mask_ehx']
             output = baseBERT(c.long(),cm.long())
-            c_emb_emb = output['em_heads']
+            c_emb = output['heads']
+            
+            c_emb_emb = emb_emb(c_emb)
 
             output = baseBERT(h.long(),hm.long())
-            em_h_emb = output['em_heads']
+            h_emb = output['heads']
+            em_h_emb = emb_emb(h_emb)
             
             cumsum_hx_n = torch.cumsum(sample['stack_hx_n'],0)
             h_emb_mean_ = []
@@ -132,15 +140,15 @@ def train_NHAMCS(EDisease_Model,
             # make EDisease input data
             things = {'s':{'emb':s_emb,
                            'attention_mask':torch.ones(s_emb.shape[:2],device=device),
-                           'position_id':1*torch.ones(h_emb_emb.unsqueeze(1).shape[:2],device=device)
+                           'position_id':5*torch.ones(h_emb_emb.unsqueeze(1).shape[:2],device=device)
                            },
                       'c':{'emb':c_emb_emb.unsqueeze(1),
                            'attention_mask':torch.ones(c_emb_emb.unsqueeze(1).shape[:2],device=device),
-                           'position_id':2*torch.ones(c_emb_emb.unsqueeze(1).shape[:2],device=device)
+                           'position_id':6*torch.ones(c_emb_emb.unsqueeze(1).shape[:2],device=device)
                            },
                       'h':{'emb':h_emb_emb.unsqueeze(1),
                            'attention_mask':torch.ones(h_emb_emb.unsqueeze(1).shape[:2],device=device),
-                           'position_id':3*torch.ones(h_emb_emb.unsqueeze(1).shape[:2],device=device)
+                           'position_id':7*torch.ones(h_emb_emb.unsqueeze(1).shape[:2],device=device)
                            },
                       }
 
@@ -154,19 +162,28 @@ def train_NHAMCS(EDisease_Model,
             attention_mask = outp['attention_mask']
 
             aug2 = 2*random.random()
-            outp2 = EDisease_Model(things,
+            outp2 = EDisease_Model(things=things,
                                    noise_scale=aug2*noise_scale,
                                    mask_ratio=mask_ratio
                                    )
             EDisease2 = outp2['EDisease']
+            EDiseaseFake = torch.cat([EDisease[1:],EDisease[:1]],dim=0)
             
             bs = len(sample['structure'])            
 
             mode = 'D' if batch_idx%2==0 else 'G'
             ptloss = True if batch_idx%99==3 else False
+            
+            things_e = {'e':{'emb':EDisease.unsqueeze(1),
+                             'emb2':EDisease2.unsqueeze(1),
+                             'embf':EDiseaseFake.unsqueeze(1),
+                             'attention_mask':torch.ones(EDisease.unsqueeze(1).shape[:2],device=device),
+                             'position_id':4*torch.ones(EDisease.unsqueeze(1).shape[:2],device=device)
+                             }
+                        }
 
-            loss_dim = dim_model(EDisease=EDisease, 
-                                 M=input_emb_org,
+            loss_dim = dim_model(things=things,
+                                 things_e=things_e,
                                  nohx=sample['stack_hx_n'],
                                  position_ids=position_ids.long(),
                                  attention_mask=attention_mask.long(),
@@ -184,6 +201,7 @@ def train_NHAMCS(EDisease_Model,
             model_optimizer.step()
             model_optimizer_dim.step()
             model_optimizer_s2e.step()
+            model_optimizer_e2e.step()
                 
             with torch.no_grad():
                 epoch_loss += loss.item()*bs
@@ -191,14 +209,21 @@ def train_NHAMCS(EDisease_Model,
 
         if ep % 1 ==0:
             save_checkpoint(checkpoint_file=checkpoint_file,
-                            checkpoint_path='EDisease.pth',
+                            checkpoint_path='EDisease_Model.pth',
                             model=EDisease_Model,
                             parallel=parallel)
             save_checkpoint(checkpoint_file=checkpoint_file,
-                            checkpoint_path='DIM.pth',
+                            checkpoint_path='dim_model.pth',
                             model=dim_model,
                             parallel=parallel)
-
+            save_checkpoint(checkpoint_file=checkpoint_file,
+                            checkpoint_path='stc2emb.pth',
+                            model=stc2emb,
+                            parallel=parallel)
+            save_checkpoint(checkpoint_file=checkpoint_file,
+                            checkpoint_path='emb_emb.pth',
+                            model=emb_emb,
+                            parallel=parallel)
             print('======= epoch:%i ========'%ep)
             
         print('++ Ep Time: {:.1f} Secs ++'.format(time.time()-t0)) 
@@ -228,6 +253,7 @@ if task=='nhamcs_train':
                                              )
 
     stc2emb = ED_model.structure_emb(S_config)
+    emb_emb = ED_model.emb_emb(T_config)
 
     dim_model = ED_model.DIM(T_config=T_config,
                               alpha=alpha,
@@ -256,6 +282,7 @@ if task=='nhamcs_train':
 
     train_NHAMCS(EDisease_Model=EDisease_Model,
                  stc2emb=stc2emb,
+                 emb_emb=emb_emb,
                  dim_model=dim_model,
                  baseBERT=baseBERT,
                  dloader=EDEW_DL_train,
@@ -265,4 +292,5 @@ if task=='nhamcs_train':
                  noise_scale=0.002,
                  mask_ratio=0.33,
                  parallel=parallel,                     
-                 checkpoint_file=checkpoint_file) 
+                 checkpoint_file=checkpoint_file,
+                 normalization=dm_normalization_np) 

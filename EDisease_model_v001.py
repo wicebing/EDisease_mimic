@@ -27,7 +27,7 @@ class adjBERTmodel(nn.Module):
         
         self.Emodel = AutoModel.from_pretrained(bert_ver)
         self.config = self.Emodel.config
-        self.emb_emb = emb_emb(T_config)
+        # self.emb_emb = emb_emb(T_config)
 
         print('baseBERT PARAMETERS: ' ,count_parameters(self.Emodel))        
         if fixBERT:
@@ -46,7 +46,7 @@ class adjBERTmodel(nn.Module):
         
 
         outputs = {'heads':heads,
-                   'em_heads':self.emb_emb(heads),
+                   # 'em_heads':self.emb_emb(heads),
                    }
         
         return outputs
@@ -143,21 +143,13 @@ class EDisease_Model(nn.Module):
         bs = emb_[0].shape[0]
         
         device = emb_[0].device
-        
-        # print(111111,device)
-                       
+                               
         em_CLS = self.EDs_embeddings(1*torch.ones((bs, 1), device=device, dtype=torch.long))
         em_SEP = self.EDs_embeddings(2*torch.ones((bs, 1), device=device, dtype=torch.long))
         em_PAD = self.EDs_embeddings(0*torch.ones((bs, 1), device=device, dtype=torch.long))
-        
-        # em_CLS = em_CLS.expand([bs,em_CLS.shape[-1]])
-        # em_SEP = em_SEP.expand([bs,em_SEP.shape[-1]])
-        # em_PAD = em_PAD.expand([bs,em_PAD.shape[-1]])
-        
-        print(111111,em_CLS.shape)
-        
-        input_emb = torch.cat([em_CLS.unsqueeze(1),*emb_],dim=1)
-        input_emb_org = torch.cat([em_CLS.unsqueeze(1),*emb_],dim=1)
+                
+        input_emb = torch.cat([em_CLS,*emb_],dim=1)
+        input_emb_org = torch.cat([em_CLS,*emb_],dim=1)
         
         attention_mask = torch.cat([torch.ones([bs,1],device=device),*attention_mask_],dim=1)
         position_ids = torch.cat([torch.zeros([bs,1],device=device),*position_id_],dim=1) 
@@ -213,50 +205,65 @@ class GnLD(nn.Module):
         
         self.EDisease_Transformer = BertModel(self.Config)
         self.classifier = classifier(T_config)
+        self.EDs_embeddings = nn.Embedding(T_config.vocab_size, T_config.hidden_size)
         
-    def forward(self, 
-                EDisease,
-                M, 
-                nohx,
-                position_ids,
-                attention_mask,
-                token_type_ids=None, 
-                mask_ratio=0.15):
+    def forward(self,
+                things,
+                things_e,
+                mask_ratio=0.15,
+                token_type_ids=None,
+                fake=False):
+        EDisease = things_e['e']['emb'].squeeze(1)
+
         bs = EDisease.shape[0]
-        eds = EDisease.unsqueeze(1)
         device = EDisease.device
 
-        em_CLS = self.EDisease_Transformer.base_model.embeddings.word_embeddings(torch.tensor([1],device=device))
-        em_SEP = self.EDisease_Transformer.base_model.embeddings.word_embeddings(torch.tensor([2],device=device))
-        em_PAD = self.EDisease_Transformer.base_model.embeddings.word_embeddings(torch.tensor([0],device=device))
+        emb_ = []
+        attention_mask_ = []
+        position_id_ = []
         
-        em_CLS = em_CLS.expand(EDisease.shape)
-        em_SEP = em_SEP.expand(EDisease.shape)
-        em_PAD = em_PAD.expand(EDisease.shape)
-        
-        EM = torch.cat([M[:,:1],eds,em_SEP.unsqueeze(1),M[:,1:]],dim=1)
-        
-        new_position_ids = torch.cat([position_ids[:,:3],position_ids[:,1:]+10],dim=1)
+        for k,v in things.items():
+            emb_.append(v['emb'])
+            attention_mask_.append(v['attention_mask'])
+            position_id_.append(v['position_id'])
 
-        input_shape = EM.size()[:-1]
+        e_emb_ = []
+        e_attention_mask_ = []
+        e_position_id_ = []
+        
+        for k,v in things.items():
+            if fake:
+                e_emb_.append(v['embf'])
+            else:
+                e_emb_.append(v['emb'])
+            e_attention_mask_.append(v['attention_mask'])
+            e_position_id_.append(v['position_id'])            
+
+        em_CLS = self.EDs_embeddings(1*torch.ones((bs, 1), device=device, dtype=torch.long))
+        em_SEP = self.EDs_embeddings(2*torch.ones((bs, 1), device=device, dtype=torch.long))
+        em_PAD = self.EDs_embeddings(0*torch.ones((bs, 1), device=device, dtype=torch.long))
+        
+        input_emb = torch.cat([em_CLS,*e_emb_,em_CLS,*emb_],dim=1)
+        
+        attention_mask = torch.cat([torch.ones([bs,1],device=device),
+                                    *e_attention_mask_,
+                                    torch.ones([bs,1],device=device),
+                                    *attention_mask_
+                                    ],dim=1)
+        position_ids = torch.cat([torch.zeros([bs,1],device=device),
+                                  *e_position_id_,
+                                  torch.ones([bs,1],device=device),
+                                  *position_id_
+                                  ],dim=1) 
+
+        input_shape = input_emb.size()[:-1]
         if token_type_ids is None:
             token_type_ids = torch.zeros(input_shape, dtype=torch.long, device=device)
             token_type_ids[:,2:] = 1
-
-        attention_mask = torch.ones(EM.shape[:2],device=device)
-
-        for i,e in enumerate(nohx):
-            if e<2:
-                attention_mask[i,-1] = 0
-
-            else:
-                rd = random.random()
-                if rd < mask_ratio:
-                    attention_mask[i,-1] = 0              
-     
-        output = self.EDisease_Transformer(inputs_embeds = EM,
+               
+        output = self.EDisease_Transformer(inputs_embeds = input_emb,
                                            attention_mask = attention_mask,
-                                           position_ids = new_position_ids,
+                                           position_ids = position_ids,
                                            token_type_ids = token_type_ids,
                                            return_dict=True)
         last_hidden_states = output.last_hidden_state 
@@ -316,21 +323,22 @@ class DIM(nn.Module):
         return soft*t, 1 - soft*t, t, 1-t
                
     def forward(self, 
-                EDisease,
-                M,
-                nohx,
-                position_ids,
-                attention_mask,
-                token_type_ids=None,
+                things,
+                things_e,
                 soft=0.7,
                 mask_ratio=0.15,
                 mode=None,
                 ptloss=False,
                 EDisease2=None,
                 ep=0):
+        
+        EDisease = things_e['e']['emb'].squeeze(1)
+        EDisease2 = things_e['e']['emb2'].squeeze(1)
+        
         device = EDisease.device
         bs = EDisease.shape[0]
-        EDiseaseFake = torch.cat([EDisease[1:],EDisease[:1]],dim=0)
+        
+        things_e['e']['emb']
  
         fake_domain, true_domain, fake_em, true_em = self.target_real_fake(batch_size=bs, soft=soft,device=device)
         
@@ -344,20 +352,13 @@ class DIM(nn.Module):
             GLD1_loss = torch.tensor(0)
 
         else:
-            GLD0 = self.GnLD(EDisease, 
-                             M, 
-                             nohx,
-                             position_ids,
-                             attention_mask,
-                             token_type_ids=None,
+            GLD0 = self.GnLD(things=things,
+                             things_e=things_e,
                              mask_ratio=mask_ratio)
-            GLD1 = self.GnLD(EDiseaseFake, 
-                             M, 
-                             nohx,
-                             position_ids,
-                             attention_mask,
-                             token_type_ids=None,
-                             mask_ratio=mask_ratio)
+            GLD1 = self.GnLD(things=things,
+                             things_e=things_e,
+                             mask_ratio=mask_ratio,
+                             fake= True)
 
             Contrast0 = torch.cat([GLD0[:,:1],GLD1[:,:1]],dim=-1)
             Contrast1 = torch.cat([GLD0[:,1:],GLD1[:,1:]],dim=-1)
@@ -499,25 +500,7 @@ if __name__ == '__main__':
     
 
     config = EDiseaseConfig()
-            
     
-
-    
-    device = 'cuda'
-    test_model = ewed_Model(config=config,
-                            tokanizer=BERT_tokenizer,
-                            device=device)
-    
-    test_model.to(device)
-    
-    
-    
-    for batch_idx, sample in enumerate(EDEW_DL):                  
-        y = test_model(sample)
-        print(batch_idx,)
-
-        if batch_idx > 2:
-            break
 
 
 
