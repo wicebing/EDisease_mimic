@@ -1,4 +1,4 @@
-import os, glob, datetime
+import os, glob, datetime, tqdm
 
 import pandas as pd
 
@@ -51,8 +51,13 @@ icustays_select.loc[:,['io_24']] = 0.
 icustays_select.loc[:,['i_24']] = 0. 
 icustays_select.loc[:,['o_24']] = 0. 
 
+
+length = len(icustays_select)
 # merge the IO events
-for i,sample in enumerate(icustays_select):
+for i in tqdm.tqdm(range(length)):
+    
+    sample = icustays_select.iloc[i]
+    
     subject_id = sample['subject_id']
     hadm_id = sample['hadm_id']
     stay_id = sample['stay_id']
@@ -71,5 +76,6 @@ for i,sample in enumerate(icustays_select):
     idx = icustays_select[icustays_select['stay_id']==stay_id].index
     
     icustays_select.loc[idx,['io_24','i_24','o_24']] = inputamount24-outputamount24,inputamount24,outputamount24
-    
-    
+
+filepath = os.path.join(db_file_path, 'data_EDis', 'select_temp0.pdpkl')
+icustays_select.to_pickle(filepath)
