@@ -85,6 +85,98 @@ db_file_path = '../datahouse/mimic-iv-0.4'
 # filepath = os.path.join(db_file_path, 'data_EDis', 'select_temp0.pdpkl')
 # icustays_select.to_pickle(filepath)
 
-# step 3: add io amount
+# # step 3: add vital sign
 filepath = os.path.join(db_file_path, 'data_EDis', 'select_temp0.pdpkl')
 icustays_select = pd.read_pickle(filepath)
+
+# # step 3a: extract vital sign from chartevents
+# filepath = os.path.join(db_file_path, 'icu', 'chartevents.csv')
+# chartevents = pd.read_csv(filepath)
+
+# filepath = os.path.join(db_file_path, 'data_EDis', 'b_d_items.csv')
+# b_d_items = pd.read_csv(filepath)
+# d_items_temp = b_d_items[['itemid', 'label','b_idx']]
+
+# chartevents_vs = chartevents.merge(d_items_temp,how='left',on=['itemid'])
+# chartevents_vs_dpna=chartevents_vs.dropna(axis=0,subset=['b_idx'])
+
+# filepath = os.path.join(db_file_path, 'data_EDis', 'chartevents_vitalsisn.pdpkl')
+# chartevents_vs_dpna.to_pickle(filepath)
+
+# # step 3b: convert to general form value & data clean / extract vital sign from chartevents
+filepath = os.path.join(db_file_path, 'data_EDis', 'chartevents_vitalsisn.pdpkl')
+chartevents_vs_dpna = pd.read_pickle(filepath)
+chartevents_vs_dpna.loc[:,['charttime']] = pd.to_datetime(chartevents_vs_dpna['charttime'])
+
+# 3b1 f->c
+temp = chartevents_vs_dpna[chartevents_vs_dpna['b_idx']=='5'].index
+chartevents_vs_dpna.loc[temp,'value'] = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
+temp_value = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
+temp_value_idx = temp_value[temp_value>8000].index
+chartevents_vs_dpna.loc[temp_value_idx,'value']=chartevents_vs_dpna.loc[temp_value_idx,'value']/100
+
+temp_value = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
+temp_value_idx = temp_value[temp_value>800].index
+chartevents_vs_dpna.loc[temp_value_idx,'value']=chartevents_vs_dpna.loc[temp_value_idx,'value']/10
+
+temp_value = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
+temp_value_idx = temp_value[temp_value>80].index
+chartevents_vs_dpna.loc[temp_value_idx,'value']=(pd.to_numeric(chartevents_vs_dpna.loc[temp_value_idx,'value'])-32)/1.8
+
+chartevents_vs_dpna.loc[temp,'value'] = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
+
+temp = chartevents_vs_dpna[chartevents_vs_dpna['b_idx']=='5b'].index
+chartevents_vs_dpna.loc[temp,'value'] = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
+temp_value = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
+temp_value_idx = temp_value[temp_value>200].index
+chartevents_vs_dpna.loc[temp_value_idx,'value']=chartevents_vs_dpna.loc[temp_value_idx,'value']/100
+
+temp_value = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
+temp_value_idx = temp_value[temp_value>80].index
+chartevents_vs_dpna.loc[temp_value_idx,'value']=(chartevents_vs_dpna.loc[temp_value_idx,'value']-32)/1.8
+
+chartevents_vs_dpna.loc[temp,'b_idx'] = '5'
+
+
+temp = chartevents_vs_dpna[chartevents_vs_dpna['b_idx']=='5'].index
+temp_value = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
+# clean F TEMPF > 48 TRMPF < 10
+chartevents_vs_dpna = chartevents_vs_dpna.drop(temp_value[temp_value>48].index)
+chartevents_vs_dpna = chartevents_vs_dpna.drop(temp_value[temp_value<10].index)
+
+# 3b2 inch->cm
+temp = chartevents_vs_dpna[chartevents_vs_dpna['b_idx']=='7'].index
+chartevents_vs_dpna.loc[temp,'value'] = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
+temp_value = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
+temp_value_idx = temp_value[temp_value>200].index
+chartevents_vs_dpna.loc[temp_value_idx,'value']=chartevents_vs_dpna.loc[temp_value_idx,'value']/10
+
+temp_value = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
+temp_value_idx = temp_value[temp_value<120].index
+chartevents_vs_dpna.loc[temp_value_idx,'value']=chartevents_vs_dpna.loc[temp_value_idx,'value']*2.54
+
+temp = chartevents_vs_dpna[chartevents_vs_dpna['b_idx']=='7b'].index
+chartevents_vs_dpna.loc[temp,'value'] = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
+temp_value = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
+temp_value_idx = temp_value[temp_value<120].index
+chartevents_vs_dpna.loc[temp_value_idx,'value']=chartevents_vs_dpna.loc[temp_value_idx,'value']*2.54
+
+chartevents_vs_dpna.loc[temp,'b_idx'] = '7'
+
+temp = chartevents_vs_dpna[chartevents_vs_dpna['b_idx']=='7'].index
+temp_value = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
+# clean height > 250 height < 20
+chartevents_vs_dpna = chartevents_vs_dpna.drop(temp_value[temp_value>250].index)
+chartevents_vs_dpna = chartevents_vs_dpna.drop(temp_value[temp_value<20].index)
+
+length = len(icustays_select)
+# merge the IO events
+for i in tqdm.tqdm(range(length)):
+    sample = icustays_select.iloc[i]
+    
+    subject_id = sample['subject_id']
+    hadm_id = sample['hadm_id']
+    stay_id = sample['stay_id']
+    intime = sample['intime']
+
+# ['SBP','DBP','HR','OXYGEN','RESPIRATION','BODYTEMPERATURE','BLOODSUGAR','HEIGHT','WEIGHT','GCSE','GCSV','GCSM','GCS']=
