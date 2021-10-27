@@ -521,6 +521,66 @@ labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
 temp_value_idx = temp_value[temp_value>20000].index
 labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
 
+# # step 5a10: clean Albumin
+tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==50862].index
+temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
+temp_value_idx = temp_value[temp_value<0].index
+labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+temp_value_idx = temp_value[temp_value>10].index
+labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+
+# # step 5a11: clean Alkaline Phosphatase
+tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==50863].index
+temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
+temp_value_idx = temp_value[temp_value<1].index
+labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+temp_value_idx = temp_value[temp_value>6000].index
+labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+
+# # step 5a12 skip Ammonia
+# # step 5a12: clean Amylase
+tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==50867].index
+temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
+temp_value_idx = temp_value[temp_value<0].index
+labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+temp_value_idx = temp_value[temp_value>12000].index
+labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+
+# # step 5a13: skip Asparate Aminotransferase (AST) Bilirubin, Direct Bilirubin, Total
+# # step 5a13: clean Calcium, Total
+tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==50893].index
+temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
+temp_value_idx = temp_value[temp_value<0.1].index
+labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+temp_value_idx = temp_value[temp_value>40].index
+labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+
+# # step 5a14: skip Chloride Creatine Kinase (CK)
+# # step 5a14: clean Creatinine
+tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==50912].index
+temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
+temp_value_idx = temp_value[temp_value<0.1].index
+labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+temp_value_idx = temp_value[temp_value>45].index
+labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+
+# # step 5a15: skip D-Dimer
+# # step 5a15: clean Glucose =50809
+tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==50931].index
+temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
+temp_value_idx = temp_value[temp_value<0.1].index
+labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+temp_value_idx = temp_value[temp_value>6000].index
+labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+
+# # step 5a15: clean Glucose =50809
+tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==50931].index
+temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
+temp_value_idx = temp_value[temp_value<0.1].index
+labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+temp_value_idx = temp_value[temp_value>6000].index
+labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+
 # # =====================================================
 
 temp0 = labevents_merge_dropna.groupby('itemid')
