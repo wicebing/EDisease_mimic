@@ -489,6 +489,38 @@ labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
 temp_value_idx = temp_value[temp_value>40].index
 labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
 
+# # step 5a6: clean Lactate
+tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==50813].index
+temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
+temp_value_idx = temp_value[temp_value<0].index
+labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+temp_value_idx = temp_value[temp_value>50].index
+labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+
+# # step 5a7: clean pH
+tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==50820].index
+temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
+temp_value_idx = temp_value[temp_value<4].index
+labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+temp_value_idx = temp_value[temp_value>9].index
+labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+
+# # step 5a8: clean Sodium, Whole Blood
+tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==50824].index
+temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
+temp_value_idx = temp_value[temp_value<70].index
+labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+temp_value_idx = temp_value[temp_value>250].index
+labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+
+# # step 5a9: clean Alanine Aminotransferase (ALT)
+tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==50861].index
+temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
+temp_value_idx = temp_value[temp_value<1].index
+labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+temp_value_idx = temp_value[temp_value>20000].index
+labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+
 # # =====================================================
 
 temp0 = labevents_merge_dropna.groupby('itemid')
