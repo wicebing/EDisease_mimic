@@ -573,12 +573,53 @@ labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
 temp_value_idx = temp_value[temp_value>6000].index
 labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
 
-# # step 5a15: clean Glucose =50809
-tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==50931].index
+# # step 5a16: clean Lipase
+tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==50956].index
 temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
 temp_value_idx = temp_value[temp_value<0.1].index
 labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
-temp_value_idx = temp_value[temp_value>6000].index
+temp_value_idx = temp_value[temp_value>40000].index
+labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+
+# # step 5a17: clean Magnesium
+tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==50960].index
+temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
+temp_value_idx = temp_value[temp_value<0.1].index
+labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+temp_value_idx = temp_value[temp_value>15].index
+labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+
+# # step 5a18: clean Phosphate
+tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==50970].index
+temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
+temp_value_idx = temp_value[temp_value<0.1].index
+labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+temp_value_idx = temp_value[temp_value>15].index
+labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+
+# # step 5a19: clean Potassium
+tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==50971].index
+temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
+temp_value_idx = temp_value[temp_value<0.1].index
+labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+temp_value_idx = temp_value[temp_value>15].index
+labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+
+# # step 5a20: skip Sodium Thyroxine (T4), Free Troponin T  Urea Nitrogen Bands Blasts Eosinophils
+# # step 5a20: clean Hematocrit
+tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==51221].index
+temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
+temp_value_idx = temp_value[temp_value<0.1].index
+labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+temp_value_idx = temp_value[temp_value>100].index
+labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+
+# # step 5a21: clean Hemoglobin
+tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==51222].index
+temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
+temp_value_idx = temp_value[temp_value<0.1].index
+labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+temp_value_idx = temp_value[temp_value>100].index
 labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
 
 # # =====================================================
