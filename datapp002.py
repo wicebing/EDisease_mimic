@@ -375,7 +375,40 @@ vital_signs = pd.read_pickle(filepath)
 filepath = os.path.join(db_file_path, 'data_EDis', 'select_temp0.pdpkl')
 icustays_select = pd.read_pickle(filepath)
 
+filepath = os.path.join(db_file_path, 'core', 'patients.csv')
+patients = pd.read_csv(filepath)
 
+temp_idx = patients[patients['gender']=='F'].index
+patients.loc[temp_idx,'gender'] = 0
+temp_idx = patients[patients['gender']=='M'].index
+patients.loc[temp_idx,'gender'] = 1
+
+patients.loc[:,'anchor_age'] = pd.to_numeric(patients.loc[:,'anchor_age'])
+
+agegender_ = []
+length = len(icustays_select)
+# merge the IO events
+for i in tqdm.tqdm(range(length)):
+    sample = icustays_select.iloc[i]
     
+    subject_id = sample['subject_id']
+    hadm_id = sample['hadm_id']
+    stay_id = sample['stay_id']
+    intime = sample['intime']
     
+    temp = patients[patients['subject_id']==subject_id]
+    gender = temp['gender'].astype(int)
+    age = temp['anchor_age'].astype(int)
     
+    agegender_temp = pd.DataFrame([age,gender],index=['AGE','SEX'])
+    agegender_temp.columns = [subject_id]
+    
+    agegender_temp = agegender_temp.T
+    
+    agegender_.append(agegender_temp) 
+
+agegender = pd.concat(agegender_,axis=0)
+agegender = agegender.drop_duplicates()
+
+filepath = os.path.join(db_file_path, 'data_EDis', 'agegender.pdpkl')
+agegender.to_pickle(filepath)
