@@ -369,51 +369,51 @@ db_file_path = '../datahouse/mimic-iv-0.4'
 # # =====================================================
 # # step 4: add age gender
 
-filepath = os.path.join(db_file_path, 'data_EDis', 'stayid_first_vitalsign.pdpkl')
-vital_signs = pd.read_pickle(filepath)
+# filepath = os.path.join(db_file_path, 'data_EDis', 'stayid_first_vitalsign.pdpkl')
+# vital_signs = pd.read_pickle(filepath)
 
-filepath = os.path.join(db_file_path, 'data_EDis', 'select_temp0.pdpkl')
-icustays_select = pd.read_pickle(filepath)
+# filepath = os.path.join(db_file_path, 'data_EDis', 'select_temp0.pdpkl')
+# icustays_select = pd.read_pickle(filepath)
 
-filepath = os.path.join(db_file_path, 'core', 'patients.csv')
-patients = pd.read_csv(filepath)
+# filepath = os.path.join(db_file_path, 'core', 'patients.csv')
+# patients = pd.read_csv(filepath)
 
-temp_idx = patients[patients['gender']=='F'].index
-patients.loc[temp_idx,'gender'] = 0
-temp_idx = patients[patients['gender']=='M'].index
-patients.loc[temp_idx,'gender'] = 1
+# temp_idx = patients[patients['gender']=='F'].index
+# patients.loc[temp_idx,'gender'] = 0
+# temp_idx = patients[patients['gender']=='M'].index
+# patients.loc[temp_idx,'gender'] = 1
 
-patients.loc[:,'anchor_age'] = pd.to_numeric(patients.loc[:,'anchor_age'])
+# patients.loc[:,'anchor_age'] = pd.to_numeric(patients.loc[:,'anchor_age'])
 
-agegender_ = []
-length = len(icustays_select)
-# merge the IO events
-for i in tqdm.tqdm(range(length)):
-    sample = icustays_select.iloc[i]
+# agegender_ = []
+# length = len(icustays_select)
+# # merge the IO events
+# for i in tqdm.tqdm(range(length)):
+#     sample = icustays_select.iloc[i]
     
-    subject_id = sample['subject_id']
-    hadm_id = sample['hadm_id']
-    stay_id = sample['stay_id']
-    intime = sample['intime']
+#     subject_id = sample['subject_id']
+#     hadm_id = sample['hadm_id']
+#     stay_id = sample['stay_id']
+#     intime = sample['intime']
     
-    temp = patients[patients['subject_id']==subject_id]
-    gender = temp['gender'].astype(int)
-    age = temp['anchor_age'].astype(int)
+#     temp = patients[patients['subject_id']==subject_id]
+#     gender = temp['gender'].astype(int)
+#     age = temp['anchor_age'].astype(int)
     
-    agegender_temp = pd.DataFrame([age,gender],index=['AGE','SEX'])
-    agegender_temp.columns = [subject_id]
+#     agegender_temp = pd.DataFrame([age,gender],index=['AGE','SEX'])
+#     agegender_temp.columns = [subject_id]
     
-    agegender_temp = agegender_temp.T
+#     agegender_temp = agegender_temp.T
     
-    agegender_.append(agegender_temp) 
+#     agegender_.append(agegender_temp) 
 
-agegender = pd.concat(agegender_,axis=0)
-agegender = agegender.reset_index()
-agegender = agegender.drop_duplicates(subset=['index'])
-agegender.set_index(['index'])
+# agegender = pd.concat(agegender_,axis=0)
+# agegender = agegender.reset_index()
+# agegender = agegender.drop_duplicates(subset=['index'])
+# agegender = agegender.set_index(['index'])
 
-filepath = os.path.join(db_file_path, 'data_EDis', 'agegender.pdpkl')
-agegender.to_pickle(filepath)
+# filepath = os.path.join(db_file_path, 'data_EDis', 'agegender.pdpkl')
+# agegender.to_pickle(filepath)
 
 # # step 5: add lab data
 
@@ -425,3 +425,26 @@ agegender.to_pickle(filepath)
 
 # filepath = os.path.join(db_file_path, 'data_EDis', 'select_temp0.pdpkl')
 # icustays_select = pd.read_pickle(filepath)
+
+# # step 5a: downsize labevents
+
+# filepath = os.path.join(db_file_path, 'hosp', 'labevents.csv')
+# labevents = pd.read_csv(filepath)
+
+# filepath = os.path.join(db_file_path, 'data_EDis', 'b_d_labitems.csv')
+# b_d_labitems = pd.read_csv(filepath)
+
+# labevents_merge = labevents.merge(b_d_labitems,how='left',on=['itemid'])
+
+# tempidx= labevents_merge[labevents_merge['b_idx']==0].index
+# labevents_merge_dropna = labevents_merge.drop(tempidx)
+
+# filepath = os.path.join(db_file_path, 'data_EDis', 'labevents_merge_dropna_0.pdpkl')
+# labevents_merge_dropna.to_pickle(filepath)
+
+# # step 5a: clean labevents
+filepath = os.path.join(db_file_path, 'data_EDis', 'labevents_merge_dropna_0.pdpkl')
+labevents_merge_dropna = pd.read_pickle(filepath)
+
+
+
