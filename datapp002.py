@@ -408,7 +408,20 @@ for i in tqdm.tqdm(range(length)):
     agegender_.append(agegender_temp) 
 
 agegender = pd.concat(agegender_,axis=0)
-agegender = agegender.drop_duplicates()
+agegender = agegender.reset_index()
+agegender = agegender.drop_duplicates(subset=['index'])
+agegender.set_index(['index'])
 
 filepath = os.path.join(db_file_path, 'data_EDis', 'agegender.pdpkl')
 agegender.to_pickle(filepath)
+
+# # step 5: add lab data
+
+# filepath = os.path.join(db_file_path, 'data_EDis', 'agegender.pdpkl')
+# agegender = pd.read_pickle(filepath)
+
+# filepath = os.path.join(db_file_path, 'data_EDis', 'stayid_first_vitalsign.pdpkl')
+# vital_signs = pd.read_pickle(filepath)
+
+# filepath = os.path.join(db_file_path, 'data_EDis', 'select_temp0.pdpkl')
+# icustays_select = pd.read_pickle(filepath)
