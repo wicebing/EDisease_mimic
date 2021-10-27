@@ -614,13 +614,57 @@ labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
 temp_value_idx = temp_value[temp_value>100].index
 labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
 
-# # step 5a21: clean Hemoglobin
+# # step 5a21: clean Hemoglobin = 50811
 tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==51222].index
+temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
+temp_value_idx = temp_value[temp_value<0.1].index
+labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+temp_value_idx = temp_value[temp_value>40].index
+labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+
+# # step 5a22: skip INR(PT) Lymphocytes Lymphocytes, Percent
+# # step 5a22: clean MCH 
+tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==51248].index
 temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
 temp_value_idx = temp_value[temp_value<0.1].index
 labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
 temp_value_idx = temp_value[temp_value>100].index
 labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+
+# # step 5a23: clean MCHC 
+tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==51249].index
+temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
+temp_value_idx = temp_value[temp_value<0.1].index
+labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+temp_value_idx = temp_value[temp_value>100].index
+labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+
+# # step 5a24: skip MCV Myelocytes Neutrophils Platelet Count PTT
+# # step 5a24: clean White Blood Cells 
+tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==51301].index
+temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
+temp_value_idx = temp_value[temp_value<0].index
+labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+temp_value_idx = temp_value[temp_value>1000].index
+labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+
+# # step 5a25: clean RBC 
+tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==51493].index
+temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
+temp_value_idx = temp_value[temp_value<0].index
+labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+temp_value_idx = temp_value[temp_value>200].index
+labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+
+# # step 5a26: clean WBC 
+tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==51516].index
+temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
+temp_value_idx = temp_value[temp_value<0].index
+labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+temp_value_idx = temp_value[temp_value>200].index
+labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+
+# # step 5a27: skip Hematocrit High-Sensitivity CRP  INR(PT) White Blood Cells Creatinine, Whole Blood Chloride....
 
 # # =====================================================
 
