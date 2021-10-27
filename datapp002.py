@@ -137,7 +137,6 @@ chartevents_vs_dpna.loc[temp_value_idx,'value']=(chartevents_vs_dpna.loc[temp_va
 
 chartevents_vs_dpna.loc[temp,'b_idx'] = '5'
 
-
 temp = chartevents_vs_dpna[chartevents_vs_dpna['b_idx']=='5'].index
 temp_value = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
 # clean F TEMPF > 48 TRMPF < 10
@@ -169,14 +168,151 @@ temp_value = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
 chartevents_vs_dpna = chartevents_vs_dpna.drop(temp_value[temp_value>250].index)
 chartevents_vs_dpna = chartevents_vs_dpna.drop(temp_value[temp_value<20].index)
 
-length = len(icustays_select)
-# merge the IO events
-for i in tqdm.tqdm(range(length)):
-    sample = icustays_select.iloc[i]
+# 3b2 lbs->kg
+temp = chartevents_vs_dpna[chartevents_vs_dpna['b_idx']=='8'].index
+chartevents_vs_dpna.loc[temp,'value'] = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
+temp_value = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
+temp_value_idx = temp_value[temp_value>0].index
+chartevents_vs_dpna.loc[temp_value_idx,'value']=chartevents_vs_dpna.loc[temp_value_idx,'value']/2.2046
+
+temp = chartevents_vs_dpna[chartevents_vs_dpna['b_idx']=='8b'].index
+chartevents_vs_dpna.loc[temp,'value'] = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
+temp_value = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
+temp_value_idx = temp_value[temp_value>300].index
+chartevents_vs_dpna.loc[temp_value_idx,'value']=chartevents_vs_dpna.loc[temp_value_idx,'value']/10
+
+chartevents_vs_dpna.loc[temp,'b_idx'] = '8'
+
+temp = chartevents_vs_dpna[chartevents_vs_dpna['b_idx']=='8'].index
+temp_value = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
+# clean weight > 400 weight < 3
+chartevents_vs_dpna = chartevents_vs_dpna.drop(temp_value[temp_value>400].index)
+chartevents_vs_dpna = chartevents_vs_dpna.drop(temp_value[temp_value<3].index)
+
+# 3b3 0_clean SBP
+temp = chartevents_vs_dpna[chartevents_vs_dpna['b_idx']=='0'].index
+chartevents_vs_dpna.loc[temp,'value'] = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
+temp_value = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
+
+# clean SBP > 300 < 0
+chartevents_vs_dpna = chartevents_vs_dpna.drop(temp_value[temp_value>300].index)
+chartevents_vs_dpna = chartevents_vs_dpna.drop(temp_value[temp_value<0].index)
+
+# 3b3 1_clean DBP
+temp = chartevents_vs_dpna[chartevents_vs_dpna['b_idx']=='1'].index
+chartevents_vs_dpna.loc[temp,'value'] = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
+temp_value = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
+
+# clean DBP > 300 < 0
+chartevents_vs_dpna = chartevents_vs_dpna.drop(temp_value[temp_value>300].index)
+chartevents_vs_dpna = chartevents_vs_dpna.drop(temp_value[temp_value<0].index)
+
+# 3b3 2_clean HR
+temp = chartevents_vs_dpna[chartevents_vs_dpna['b_idx']=='2'].index
+chartevents_vs_dpna.loc[temp,'value'] = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
+temp_value = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
+
+# clean HR > 300 < 0
+chartevents_vs_dpna = chartevents_vs_dpna.drop(temp_value[temp_value>300].index)
+chartevents_vs_dpna = chartevents_vs_dpna.drop(temp_value[temp_value<0].index)
+
+# 3b3 3_clean OXYGEN
+temp = chartevents_vs_dpna[chartevents_vs_dpna['b_idx']=='3'].index
+chartevents_vs_dpna.loc[temp,'value'] = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
+temp_value = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
+
+# clean OXYGEN > 100 < 0
+chartevents_vs_dpna = chartevents_vs_dpna.drop(temp_value[temp_value>100].index)
+chartevents_vs_dpna = chartevents_vs_dpna.drop(temp_value[temp_value<0].index)
+
+# 3b3 4_clean RESPIRATION
+temp = chartevents_vs_dpna[chartevents_vs_dpna['b_idx']=='4'].index
+chartevents_vs_dpna.loc[temp,'value'] = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
+temp_value = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
+
+# clean RESPIRATION > 100 < 0
+chartevents_vs_dpna = chartevents_vs_dpna.drop(temp_value[temp_value>100].index)
+chartevents_vs_dpna = chartevents_vs_dpna.drop(temp_value[temp_value<0].index)
+
+# 3b3 6_clean BLOODSUGAR
+temp = chartevents_vs_dpna[chartevents_vs_dpna['b_idx']=='6'].index
+chartevents_vs_dpna.loc[temp,'value'] = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
+temp_value = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
+
+# clean RESPIRATION > 100 < 0
+chartevents_vs_dpna = chartevents_vs_dpna.drop(temp_value[temp_value>5000].index)
+chartevents_vs_dpna = chartevents_vs_dpna.drop(temp_value[temp_value<0].index)
+
+# 3b3 9_clean GCSE
+temp = chartevents_vs_dpna[chartevents_vs_dpna['b_idx']=='9'].index
+temp_value = chartevents_vs_dpna.loc[temp,'value']
+temp_value_idx = temp_value[temp_value=='Spontaneously'].index
+chartevents_vs_dpna.loc[temp_value_idx,'value'] = 4
+
+temp_value_idx = temp_value[temp_value=='To Speech'].index
+chartevents_vs_dpna.loc[temp_value_idx,'value'] = 3
+
+temp_value_idx = temp_value[temp_value=='To Pain'].index
+chartevents_vs_dpna.loc[temp_value_idx,'value'] = 2
+
+temp_value_idx = temp_value[temp_value=='None'].index
+chartevents_vs_dpna.loc[temp_value_idx,'value'] = 1
+
+# 3b3 10_clean GCSV
+temp = chartevents_vs_dpna[chartevents_vs_dpna['b_idx']=='10'].index
+temp_value = chartevents_vs_dpna.loc[temp,'value']
+
+temp_value_idx = temp_value[temp_value=='Oriented'].index
+chartevents_vs_dpna.loc[temp_value_idx,'value'] = 5
+
+temp_value_idx = temp_value[temp_value=='Confused'].index
+chartevents_vs_dpna.loc[temp_value_idx,'value'] = 4
+
+temp_value_idx = temp_value[temp_value=='Inappropriate Words'].index
+chartevents_vs_dpna.loc[temp_value_idx,'value'] = 3
+
+temp_value_idx = temp_value[temp_value=='Incomprehensible sounds'].index
+chartevents_vs_dpna.loc[temp_value_idx,'value'] = 2
+
+temp_value_idx = temp_value[temp_value=='No Response'].index
+chartevents_vs_dpna.loc[temp_value_idx,'value'] = 1
+
+temp_value_idx = temp_value[temp_value=='No Response-ETT'].index
+chartevents_vs_dpna.loc[temp_value_idx,'value'] = None
+
+# 3b3 11_clean GCSV
+temp = chartevents_vs_dpna[chartevents_vs_dpna['b_idx']=='11'].index
+temp_value = chartevents_vs_dpna.loc[temp,'value']
+
+temp_value_idx = temp_value[temp_value=='Obeys Commands'].index
+chartevents_vs_dpna.loc[temp_value_idx,'value'] = 6
+
+temp_value_idx = temp_value[temp_value=='Localizes Pain'].index
+chartevents_vs_dpna.loc[temp_value_idx,'value'] = 5
+
+temp_value_idx = temp_value[temp_value=='Flex-withdraws'].index
+chartevents_vs_dpna.loc[temp_value_idx,'value'] = 4
+
+temp_value_idx = temp_value[temp_value=='Abnormal Flexion'].index
+chartevents_vs_dpna.loc[temp_value_idx,'value'] = 3
+
+temp_value_idx = temp_value[temp_value=='Abnormal extension'].index
+chartevents_vs_dpna.loc[temp_value_idx,'value'] = 2
+
+temp_value_idx = temp_value[temp_value=='No response'].index
+chartevents_vs_dpna.loc[temp_value_idx,'value'] = 1
+
+filepath = os.path.join(db_file_path, 'data_EDis', 'chartevents_vitalsisn_01.pdpkl')
+chartevents_vs_dpna.to_pickle(filepath)
+
+# length = len(icustays_select)
+# # merge the IO events
+# for i in tqdm.tqdm(range(length)):
+#     sample = icustays_select.iloc[i]
     
-    subject_id = sample['subject_id']
-    hadm_id = sample['hadm_id']
-    stay_id = sample['stay_id']
-    intime = sample['intime']
+#     subject_id = sample['subject_id']
+#     hadm_id = sample['hadm_id']
+#     stay_id = sample['stay_id']
+#     intime = sample['intime']
 
 # ['SBP','DBP','HR','OXYGEN','RESPIRATION','BODYTEMPERATURE','BLOODSUGAR','HEIGHT','WEIGHT','GCSE','GCSV','GCSM','GCS']=
