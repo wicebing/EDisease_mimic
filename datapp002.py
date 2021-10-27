@@ -664,12 +664,13 @@ labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
 temp_value_idx = temp_value[temp_value>200].index
 labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
 
-# # step 5a27: skip Hematocrit High-Sensitivity CRP  INR(PT) White Blood Cells Creatinine, Whole Blood Chloride....
-
-# # =====================================================
+# # step 5a27: skip Hematocrit High-Sensitivity CRP  INR(PT) White Blood Cells Creatinine, Whole Blood Chloride....# # =====================================================
+# # step 5a27: convert Ca total to free Ca /4
+tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==50893].index
+temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
 
 temp0 = labevents_merge_dropna.groupby('itemid')
-temp1 = temp0['valuenum'].aggregate(['count','min', 'max', 'mean', 'median'])
+temp1 = temp0['valuenum'].aggregate(['count','min', 'max', 'mean', 'median', 'std'])
 temp1 = temp1.reset_index()
 temp1 = temp1.merge(b_d_labitems,how='left',on=['itemid'])
 
