@@ -426,13 +426,14 @@ db_file_path = '../datahouse/mimic-iv-0.4'
 # filepath = os.path.join(db_file_path, 'data_EDis', 'select_temp0.pdpkl')
 # icustays_select = pd.read_pickle(filepath)
 
+# # =====================================================
 # # step 5a: downsize labevents
 
 # filepath = os.path.join(db_file_path, 'hosp', 'labevents.csv')
 # labevents = pd.read_csv(filepath)
 
-# filepath = os.path.join(db_file_path, 'data_EDis', 'b_d_labitems.csv')
-# b_d_labitems = pd.read_csv(filepath)
+filepath = os.path.join(db_file_path, 'data_EDis', 'b_d_labitems.csv')
+b_d_labitems = pd.read_csv(filepath)
 
 # labevents_merge = labevents.merge(b_d_labitems,how='left',on=['itemid'])
 
@@ -442,9 +443,57 @@ db_file_path = '../datahouse/mimic-iv-0.4'
 # filepath = os.path.join(db_file_path, 'data_EDis', 'labevents_merge_dropna_0.pdpkl')
 # labevents_merge_dropna.to_pickle(filepath)
 
+# # =====================================================
 # # step 5a: clean labevents
 filepath = os.path.join(db_file_path, 'data_EDis', 'labevents_merge_dropna_0.pdpkl')
 labevents_merge_dropna = pd.read_pickle(filepath)
 
+# # =====================================================
+# # step 5a1: clean Base Excess
+tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==50802].index
+temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
+temp_value_idx = temp_value[temp_value<-100].index
+labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+temp_value_idx = temp_value[temp_value>100].index
+labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
 
+# # step 5a2: clean Chloride, Whole Blood
+tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==50806].index
+temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
+temp_value_idx = temp_value[temp_value<50].index
+labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+temp_value_idx = temp_value[temp_value>150].index
+labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
 
+# # step 5a3: clean Free Calcium
+tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==50808].index
+temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
+temp_value_idx = temp_value[temp_value<0].index
+labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+temp_value_idx = temp_value[temp_value>4.5].index
+labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+
+# # step 5a4: clean Glucose
+tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==50809].index
+temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
+temp_value_idx = temp_value[temp_value<0].index
+labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+temp_value_idx = temp_value[temp_value>3000].index
+labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+
+# # step 5a5: clean Hemoglobin
+tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==50811].index
+temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
+temp_value_idx = temp_value[temp_value<0.1].index
+labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+temp_value_idx = temp_value[temp_value>40].index
+labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+
+# # =====================================================
+
+temp0 = labevents_merge_dropna.groupby('itemid')
+temp1 = temp0['valuenum'].aggregate(['count','min', 'max', 'mean', 'median'])
+temp1 = temp1.reset_index()
+temp1 = temp1.merge(b_d_labitems,how='left',on=['itemid'])
+
+temp1.to_csv(os.path.join(db_file_path, 'data_EDis', 'b_lab_sel.csv'))
