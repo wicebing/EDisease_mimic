@@ -5,6 +5,7 @@ import pandas as pd
 db_file_path = '../datahouse/mimic-iv-0.4'
 
 
+# # =====================================================
 # # step 1: drop trauma/ sicu
 
 # filepath = os.path.join(db_file_path, 'icu', 'icustays.csv')
@@ -55,6 +56,7 @@ db_file_path = '../datahouse/mimic-iv-0.4'
 # icustays_select.loc[:,['i_24']] = 0. 
 # icustays_select.loc[:,['o_24']] = 0. 
 
+# # =====================================================
 # # step 2: add io amount
 
 # length = len(icustays_select)
@@ -85,10 +87,10 @@ db_file_path = '../datahouse/mimic-iv-0.4'
 # filepath = os.path.join(db_file_path, 'data_EDis', 'select_temp0.pdpkl')
 # icustays_select.to_pickle(filepath)
 
+# # =====================================================
 # # step 3: add vital sign
-filepath = os.path.join(db_file_path, 'data_EDis', 'select_temp0.pdpkl')
-icustays_select = pd.read_pickle(filepath)
 
+# # =====================================================
 # # step 3a: extract vital sign from chartevents
 # filepath = os.path.join(db_file_path, 'icu', 'chartevents.csv')
 # chartevents = pd.read_csv(filepath)
@@ -103,207 +105,217 @@ icustays_select = pd.read_pickle(filepath)
 # filepath = os.path.join(db_file_path, 'data_EDis', 'chartevents_vitalsisn.pdpkl')
 # chartevents_vs_dpna.to_pickle(filepath)
 
+# # =====================================================
 # # step 3b: convert to general form value & data clean / extract vital sign from chartevents
-filepath = os.path.join(db_file_path, 'data_EDis', 'chartevents_vitalsisn.pdpkl')
-chartevents_vs_dpna = pd.read_pickle(filepath)
-chartevents_vs_dpna.loc[:,['charttime']] = pd.to_datetime(chartevents_vs_dpna['charttime'])
+# filepath = os.path.join(db_file_path, 'data_EDis', 'chartevents_vitalsisn.pdpkl')
+# chartevents_vs_dpna = pd.read_pickle(filepath)
+# chartevents_vs_dpna.loc[:,['charttime']] = pd.to_datetime(chartevents_vs_dpna['charttime'])
 
-# 3b1 f->c
-temp = chartevents_vs_dpna[chartevents_vs_dpna['b_idx']=='5'].index
-chartevents_vs_dpna.loc[temp,'value'] = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
-temp_value = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
-temp_value_idx = temp_value[temp_value>8000].index
-chartevents_vs_dpna.loc[temp_value_idx,'value']=chartevents_vs_dpna.loc[temp_value_idx,'value']/100
+# # 3b1 f->c
+# temp = chartevents_vs_dpna[chartevents_vs_dpna['b_idx']=='5'].index
+# chartevents_vs_dpna.loc[temp,'value'] = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
+# temp_value = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
+# temp_value_idx = temp_value[temp_value>8000].index
+# chartevents_vs_dpna.loc[temp_value_idx,'value']=chartevents_vs_dpna.loc[temp_value_idx,'value']/100
 
-temp_value = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
-temp_value_idx = temp_value[temp_value>800].index
-chartevents_vs_dpna.loc[temp_value_idx,'value']=chartevents_vs_dpna.loc[temp_value_idx,'value']/10
+# temp_value = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
+# temp_value_idx = temp_value[temp_value>800].index
+# chartevents_vs_dpna.loc[temp_value_idx,'value']=chartevents_vs_dpna.loc[temp_value_idx,'value']/10
 
-temp_value = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
-temp_value_idx = temp_value[temp_value>80].index
-chartevents_vs_dpna.loc[temp_value_idx,'value']=(pd.to_numeric(chartevents_vs_dpna.loc[temp_value_idx,'value'])-32)/1.8
+# temp_value = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
+# temp_value_idx = temp_value[temp_value>80].index
+# chartevents_vs_dpna.loc[temp_value_idx,'value']=(pd.to_numeric(chartevents_vs_dpna.loc[temp_value_idx,'value'])-32)/1.8
 
-chartevents_vs_dpna.loc[temp,'value'] = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
+# chartevents_vs_dpna.loc[temp,'value'] = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
 
-temp = chartevents_vs_dpna[chartevents_vs_dpna['b_idx']=='5b'].index
-chartevents_vs_dpna.loc[temp,'value'] = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
-temp_value = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
-temp_value_idx = temp_value[temp_value>200].index
-chartevents_vs_dpna.loc[temp_value_idx,'value']=chartevents_vs_dpna.loc[temp_value_idx,'value']/100
+# temp = chartevents_vs_dpna[chartevents_vs_dpna['b_idx']=='5b'].index
+# chartevents_vs_dpna.loc[temp,'value'] = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
+# temp_value = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
+# temp_value_idx = temp_value[temp_value>200].index
+# chartevents_vs_dpna.loc[temp_value_idx,'value']=chartevents_vs_dpna.loc[temp_value_idx,'value']/100
 
-temp_value = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
-temp_value_idx = temp_value[temp_value>80].index
-chartevents_vs_dpna.loc[temp_value_idx,'value']=(chartevents_vs_dpna.loc[temp_value_idx,'value']-32)/1.8
+# temp_value = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
+# temp_value_idx = temp_value[temp_value>80].index
+# chartevents_vs_dpna.loc[temp_value_idx,'value']=(chartevents_vs_dpna.loc[temp_value_idx,'value']-32)/1.8
 
-chartevents_vs_dpna.loc[temp,'b_idx'] = '5'
+# chartevents_vs_dpna.loc[temp,'b_idx'] = '5'
 
-temp = chartevents_vs_dpna[chartevents_vs_dpna['b_idx']=='5'].index
-temp_value = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
-# clean F TEMPF > 48 TRMPF < 10
-chartevents_vs_dpna = chartevents_vs_dpna.drop(temp_value[temp_value>48].index)
-chartevents_vs_dpna = chartevents_vs_dpna.drop(temp_value[temp_value<10].index)
+# temp = chartevents_vs_dpna[chartevents_vs_dpna['b_idx']=='5'].index
+# temp_value = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
+# # clean F TEMPF > 48 TRMPF < 10
+# chartevents_vs_dpna = chartevents_vs_dpna.drop(temp_value[temp_value>48].index)
+# chartevents_vs_dpna = chartevents_vs_dpna.drop(temp_value[temp_value<10].index)
 
-# 3b2 inch->cm
-temp = chartevents_vs_dpna[chartevents_vs_dpna['b_idx']=='7'].index
-chartevents_vs_dpna.loc[temp,'value'] = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
-temp_value = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
-temp_value_idx = temp_value[temp_value>200].index
-chartevents_vs_dpna.loc[temp_value_idx,'value']=chartevents_vs_dpna.loc[temp_value_idx,'value']/10
+# # 3b2 inch->cm
+# temp = chartevents_vs_dpna[chartevents_vs_dpna['b_idx']=='7'].index
+# chartevents_vs_dpna.loc[temp,'value'] = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
+# temp_value = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
+# temp_value_idx = temp_value[temp_value>200].index
+# chartevents_vs_dpna.loc[temp_value_idx,'value']=chartevents_vs_dpna.loc[temp_value_idx,'value']/10
 
-temp_value = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
-temp_value_idx = temp_value[temp_value<120].index
-chartevents_vs_dpna.loc[temp_value_idx,'value']=chartevents_vs_dpna.loc[temp_value_idx,'value']*2.54
+# temp_value = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
+# temp_value_idx = temp_value[temp_value<120].index
+# chartevents_vs_dpna.loc[temp_value_idx,'value']=chartevents_vs_dpna.loc[temp_value_idx,'value']*2.54
 
-temp = chartevents_vs_dpna[chartevents_vs_dpna['b_idx']=='7b'].index
-chartevents_vs_dpna.loc[temp,'value'] = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
-temp_value = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
-temp_value_idx = temp_value[temp_value<120].index
-chartevents_vs_dpna.loc[temp_value_idx,'value']=chartevents_vs_dpna.loc[temp_value_idx,'value']*2.54
+# temp = chartevents_vs_dpna[chartevents_vs_dpna['b_idx']=='7b'].index
+# chartevents_vs_dpna.loc[temp,'value'] = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
+# temp_value = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
+# temp_value_idx = temp_value[temp_value<120].index
+# chartevents_vs_dpna.loc[temp_value_idx,'value']=chartevents_vs_dpna.loc[temp_value_idx,'value']*2.54
 
-chartevents_vs_dpna.loc[temp,'b_idx'] = '7'
+# chartevents_vs_dpna.loc[temp,'b_idx'] = '7'
 
-temp = chartevents_vs_dpna[chartevents_vs_dpna['b_idx']=='7'].index
-temp_value = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
-# clean height > 250 height < 20
-chartevents_vs_dpna = chartevents_vs_dpna.drop(temp_value[temp_value>250].index)
-chartevents_vs_dpna = chartevents_vs_dpna.drop(temp_value[temp_value<20].index)
+# temp = chartevents_vs_dpna[chartevents_vs_dpna['b_idx']=='7'].index
+# temp_value = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
+# # clean height > 250 height < 20
+# chartevents_vs_dpna = chartevents_vs_dpna.drop(temp_value[temp_value>250].index)
+# chartevents_vs_dpna = chartevents_vs_dpna.drop(temp_value[temp_value<20].index)
 
-# 3b2 lbs->kg
-temp = chartevents_vs_dpna[chartevents_vs_dpna['b_idx']=='8'].index
-chartevents_vs_dpna.loc[temp,'value'] = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
-temp_value = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
-temp_value_idx = temp_value[temp_value>0].index
-chartevents_vs_dpna.loc[temp_value_idx,'value']=chartevents_vs_dpna.loc[temp_value_idx,'value']/2.2046
+# # 3b2 lbs->kg
+# temp = chartevents_vs_dpna[chartevents_vs_dpna['b_idx']=='8'].index
+# chartevents_vs_dpna.loc[temp,'value'] = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
+# temp_value = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
+# temp_value_idx = temp_value[temp_value>0].index
+# chartevents_vs_dpna.loc[temp_value_idx,'value']=chartevents_vs_dpna.loc[temp_value_idx,'value']/2.2046
 
-temp = chartevents_vs_dpna[chartevents_vs_dpna['b_idx']=='8b'].index
-chartevents_vs_dpna.loc[temp,'value'] = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
-temp_value = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
-temp_value_idx = temp_value[temp_value>300].index
-chartevents_vs_dpna.loc[temp_value_idx,'value']=chartevents_vs_dpna.loc[temp_value_idx,'value']/10
+# temp = chartevents_vs_dpna[chartevents_vs_dpna['b_idx']=='8b'].index
+# chartevents_vs_dpna.loc[temp,'value'] = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
+# temp_value = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
+# temp_value_idx = temp_value[temp_value>300].index
+# chartevents_vs_dpna.loc[temp_value_idx,'value']=chartevents_vs_dpna.loc[temp_value_idx,'value']/10
 
-chartevents_vs_dpna.loc[temp,'b_idx'] = '8'
+# chartevents_vs_dpna.loc[temp,'b_idx'] = '8'
 
-temp = chartevents_vs_dpna[chartevents_vs_dpna['b_idx']=='8'].index
-temp_value = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
-# clean weight > 400 weight < 3
-chartevents_vs_dpna = chartevents_vs_dpna.drop(temp_value[temp_value>400].index)
-chartevents_vs_dpna = chartevents_vs_dpna.drop(temp_value[temp_value<3].index)
+# temp = chartevents_vs_dpna[chartevents_vs_dpna['b_idx']=='8'].index
+# temp_value = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
+# # clean weight > 400 weight < 3
+# chartevents_vs_dpna = chartevents_vs_dpna.drop(temp_value[temp_value>400].index)
+# chartevents_vs_dpna = chartevents_vs_dpna.drop(temp_value[temp_value<3].index)
 
-# 3b3 0_clean SBP
-temp = chartevents_vs_dpna[chartevents_vs_dpna['b_idx']=='0'].index
-chartevents_vs_dpna.loc[temp,'value'] = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
-temp_value = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
+# # 3b3 0_clean SBP
+# temp = chartevents_vs_dpna[chartevents_vs_dpna['b_idx']=='0'].index
+# chartevents_vs_dpna.loc[temp,'value'] = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
+# temp_value = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
 
-# clean SBP > 300 < 0
-chartevents_vs_dpna = chartevents_vs_dpna.drop(temp_value[temp_value>300].index)
-chartevents_vs_dpna = chartevents_vs_dpna.drop(temp_value[temp_value<0].index)
+# # clean SBP > 300 < 0
+# chartevents_vs_dpna = chartevents_vs_dpna.drop(temp_value[temp_value>300].index)
+# chartevents_vs_dpna = chartevents_vs_dpna.drop(temp_value[temp_value<0].index)
 
-# 3b3 1_clean DBP
-temp = chartevents_vs_dpna[chartevents_vs_dpna['b_idx']=='1'].index
-chartevents_vs_dpna.loc[temp,'value'] = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
-temp_value = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
+# # 3b3 1_clean DBP
+# temp = chartevents_vs_dpna[chartevents_vs_dpna['b_idx']=='1'].index
+# chartevents_vs_dpna.loc[temp,'value'] = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
+# temp_value = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
 
-# clean DBP > 300 < 0
-chartevents_vs_dpna = chartevents_vs_dpna.drop(temp_value[temp_value>300].index)
-chartevents_vs_dpna = chartevents_vs_dpna.drop(temp_value[temp_value<0].index)
+# # clean DBP > 300 < 0
+# chartevents_vs_dpna = chartevents_vs_dpna.drop(temp_value[temp_value>300].index)
+# chartevents_vs_dpna = chartevents_vs_dpna.drop(temp_value[temp_value<0].index)
 
-# 3b3 2_clean HR
-temp = chartevents_vs_dpna[chartevents_vs_dpna['b_idx']=='2'].index
-chartevents_vs_dpna.loc[temp,'value'] = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
-temp_value = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
+# # 3b3 2_clean HR
+# temp = chartevents_vs_dpna[chartevents_vs_dpna['b_idx']=='2'].index
+# chartevents_vs_dpna.loc[temp,'value'] = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
+# temp_value = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
 
-# clean HR > 300 < 0
-chartevents_vs_dpna = chartevents_vs_dpna.drop(temp_value[temp_value>300].index)
-chartevents_vs_dpna = chartevents_vs_dpna.drop(temp_value[temp_value<0].index)
+# # clean HR > 300 < 0
+# chartevents_vs_dpna = chartevents_vs_dpna.drop(temp_value[temp_value>300].index)
+# chartevents_vs_dpna = chartevents_vs_dpna.drop(temp_value[temp_value<0].index)
 
-# 3b3 3_clean OXYGEN
-temp = chartevents_vs_dpna[chartevents_vs_dpna['b_idx']=='3'].index
-chartevents_vs_dpna.loc[temp,'value'] = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
-temp_value = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
+# # 3b3 3_clean OXYGEN
+# temp = chartevents_vs_dpna[chartevents_vs_dpna['b_idx']=='3'].index
+# chartevents_vs_dpna.loc[temp,'value'] = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
+# temp_value = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
 
-# clean OXYGEN > 100 < 0
-chartevents_vs_dpna = chartevents_vs_dpna.drop(temp_value[temp_value>100].index)
-chartevents_vs_dpna = chartevents_vs_dpna.drop(temp_value[temp_value<0].index)
+# # clean OXYGEN > 100 < 0
+# chartevents_vs_dpna = chartevents_vs_dpna.drop(temp_value[temp_value>100].index)
+# chartevents_vs_dpna = chartevents_vs_dpna.drop(temp_value[temp_value<0].index)
 
-# 3b3 4_clean RESPIRATION
-temp = chartevents_vs_dpna[chartevents_vs_dpna['b_idx']=='4'].index
-chartevents_vs_dpna.loc[temp,'value'] = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
-temp_value = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
+# # 3b3 4_clean RESPIRATION
+# temp = chartevents_vs_dpna[chartevents_vs_dpna['b_idx']=='4'].index
+# chartevents_vs_dpna.loc[temp,'value'] = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
+# temp_value = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
 
-# clean RESPIRATION > 100 < 0
-chartevents_vs_dpna = chartevents_vs_dpna.drop(temp_value[temp_value>100].index)
-chartevents_vs_dpna = chartevents_vs_dpna.drop(temp_value[temp_value<0].index)
+# # clean RESPIRATION > 100 < 0
+# chartevents_vs_dpna = chartevents_vs_dpna.drop(temp_value[temp_value>100].index)
+# chartevents_vs_dpna = chartevents_vs_dpna.drop(temp_value[temp_value<0].index)
 
-# 3b3 6_clean BLOODSUGAR
-temp = chartevents_vs_dpna[chartevents_vs_dpna['b_idx']=='6'].index
-chartevents_vs_dpna.loc[temp,'value'] = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
-temp_value = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
+# # 3b3 6_clean BLOODSUGAR
+# temp = chartevents_vs_dpna[chartevents_vs_dpna['b_idx']=='6'].index
+# chartevents_vs_dpna.loc[temp,'value'] = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
+# temp_value = pd.to_numeric(chartevents_vs_dpna.loc[temp,'value'])
 
-# clean RESPIRATION > 100 < 0
-chartevents_vs_dpna = chartevents_vs_dpna.drop(temp_value[temp_value>5000].index)
-chartevents_vs_dpna = chartevents_vs_dpna.drop(temp_value[temp_value<0].index)
+# # clean RESPIRATION > 100 < 0
+# chartevents_vs_dpna = chartevents_vs_dpna.drop(temp_value[temp_value>5000].index)
+# chartevents_vs_dpna = chartevents_vs_dpna.drop(temp_value[temp_value<0].index)
 
-# 3b3 9_clean GCSE
-temp = chartevents_vs_dpna[chartevents_vs_dpna['b_idx']=='9'].index
-temp_value = chartevents_vs_dpna.loc[temp,'value']
-temp_value_idx = temp_value[temp_value=='Spontaneously'].index
-chartevents_vs_dpna.loc[temp_value_idx,'value'] = 4
+# # 3b3 9_clean GCSE
+# temp = chartevents_vs_dpna[chartevents_vs_dpna['b_idx']=='9'].index
+# temp_value = chartevents_vs_dpna.loc[temp,'value']
+# temp_value_idx = temp_value[temp_value=='Spontaneously'].index
+# chartevents_vs_dpna.loc[temp_value_idx,'value'] = 4
 
-temp_value_idx = temp_value[temp_value=='To Speech'].index
-chartevents_vs_dpna.loc[temp_value_idx,'value'] = 3
+# temp_value_idx = temp_value[temp_value=='To Speech'].index
+# chartevents_vs_dpna.loc[temp_value_idx,'value'] = 3
 
-temp_value_idx = temp_value[temp_value=='To Pain'].index
-chartevents_vs_dpna.loc[temp_value_idx,'value'] = 2
+# temp_value_idx = temp_value[temp_value=='To Pain'].index
+# chartevents_vs_dpna.loc[temp_value_idx,'value'] = 2
 
-temp_value_idx = temp_value[temp_value=='None'].index
-chartevents_vs_dpna.loc[temp_value_idx,'value'] = 1
+# temp_value_idx = temp_value[temp_value=='None'].index
+# chartevents_vs_dpna.loc[temp_value_idx,'value'] = 1
 
-# 3b3 10_clean GCSV
-temp = chartevents_vs_dpna[chartevents_vs_dpna['b_idx']=='10'].index
-temp_value = chartevents_vs_dpna.loc[temp,'value']
+# # 3b3 10_clean GCSV
+# temp = chartevents_vs_dpna[chartevents_vs_dpna['b_idx']=='10'].index
+# temp_value = chartevents_vs_dpna.loc[temp,'value']
 
-temp_value_idx = temp_value[temp_value=='Oriented'].index
-chartevents_vs_dpna.loc[temp_value_idx,'value'] = 5
+# temp_value_idx = temp_value[temp_value=='Oriented'].index
+# chartevents_vs_dpna.loc[temp_value_idx,'value'] = 5
 
-temp_value_idx = temp_value[temp_value=='Confused'].index
-chartevents_vs_dpna.loc[temp_value_idx,'value'] = 4
+# temp_value_idx = temp_value[temp_value=='Confused'].index
+# chartevents_vs_dpna.loc[temp_value_idx,'value'] = 4
 
-temp_value_idx = temp_value[temp_value=='Inappropriate Words'].index
-chartevents_vs_dpna.loc[temp_value_idx,'value'] = 3
+# temp_value_idx = temp_value[temp_value=='Inappropriate Words'].index
+# chartevents_vs_dpna.loc[temp_value_idx,'value'] = 3
 
-temp_value_idx = temp_value[temp_value=='Incomprehensible sounds'].index
-chartevents_vs_dpna.loc[temp_value_idx,'value'] = 2
+# temp_value_idx = temp_value[temp_value=='Incomprehensible sounds'].index
+# chartevents_vs_dpna.loc[temp_value_idx,'value'] = 2
 
-temp_value_idx = temp_value[temp_value=='No Response'].index
-chartevents_vs_dpna.loc[temp_value_idx,'value'] = 1
+# temp_value_idx = temp_value[temp_value=='No Response'].index
+# chartevents_vs_dpna.loc[temp_value_idx,'value'] = 1
 
-temp_value_idx = temp_value[temp_value=='No Response-ETT'].index
-chartevents_vs_dpna.loc[temp_value_idx,'value'] = None
+# temp_value_idx = temp_value[temp_value=='No Response-ETT'].index
+# chartevents_vs_dpna.loc[temp_value_idx,'value'] = None
 
-# 3b3 11_clean GCSV
-temp = chartevents_vs_dpna[chartevents_vs_dpna['b_idx']=='11'].index
-temp_value = chartevents_vs_dpna.loc[temp,'value']
+# # 3b3 11_clean GCSV
+# temp = chartevents_vs_dpna[chartevents_vs_dpna['b_idx']=='11'].index
+# temp_value = chartevents_vs_dpna.loc[temp,'value']
 
-temp_value_idx = temp_value[temp_value=='Obeys Commands'].index
-chartevents_vs_dpna.loc[temp_value_idx,'value'] = 6
+# temp_value_idx = temp_value[temp_value=='Obeys Commands'].index
+# chartevents_vs_dpna.loc[temp_value_idx,'value'] = 6
 
-temp_value_idx = temp_value[temp_value=='Localizes Pain'].index
-chartevents_vs_dpna.loc[temp_value_idx,'value'] = 5
+# temp_value_idx = temp_value[temp_value=='Localizes Pain'].index
+# chartevents_vs_dpna.loc[temp_value_idx,'value'] = 5
 
-temp_value_idx = temp_value[temp_value=='Flex-withdraws'].index
-chartevents_vs_dpna.loc[temp_value_idx,'value'] = 4
+# temp_value_idx = temp_value[temp_value=='Flex-withdraws'].index
+# chartevents_vs_dpna.loc[temp_value_idx,'value'] = 4
 
-temp_value_idx = temp_value[temp_value=='Abnormal Flexion'].index
-chartevents_vs_dpna.loc[temp_value_idx,'value'] = 3
+# temp_value_idx = temp_value[temp_value=='Abnormal Flexion'].index
+# chartevents_vs_dpna.loc[temp_value_idx,'value'] = 3
 
-temp_value_idx = temp_value[temp_value=='Abnormal extension'].index
-chartevents_vs_dpna.loc[temp_value_idx,'value'] = 2
+# temp_value_idx = temp_value[temp_value=='Abnormal extension'].index
+# chartevents_vs_dpna.loc[temp_value_idx,'value'] = 2
 
-temp_value_idx = temp_value[temp_value=='No response'].index
-chartevents_vs_dpna.loc[temp_value_idx,'value'] = 1
+# temp_value_idx = temp_value[temp_value=='No response'].index
+# chartevents_vs_dpna.loc[temp_value_idx,'value'] = 1
+
+# filepath = os.path.join(db_file_path, 'data_EDis', 'chartevents_vitalsisn_01.pdpkl')
+# chartevents_vs_dpna.to_pickle(filepath)
+
+# # =====================================================
+# # step 3c: extract vital sign from chartevents
 
 filepath = os.path.join(db_file_path, 'data_EDis', 'chartevents_vitalsisn_01.pdpkl')
-chartevents_vs_dpna.to_pickle(filepath)
+chartevents_vs_dpna = pd.read_pickle(filepath)
+
+filepath = os.path.join(db_file_path, 'data_EDis', 'select_temp0.pdpkl')
+icustays_select = pd.read_pickle(filepath)
 
 # length = len(icustays_select)
 # # merge the IO events
