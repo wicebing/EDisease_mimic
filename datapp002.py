@@ -317,14 +317,54 @@ chartevents_vs_dpna = pd.read_pickle(filepath)
 filepath = os.path.join(db_file_path, 'data_EDis', 'select_temp0.pdpkl')
 icustays_select = pd.read_pickle(filepath)
 
-# length = len(icustays_select)
-# # merge the IO events
-# for i in tqdm.tqdm(range(length)):
-#     sample = icustays_select.iloc[i]
-    
-#     subject_id = sample['subject_id']
-#     hadm_id = sample['hadm_id']
-#     stay_id = sample['stay_id']
-#     intime = sample['intime']
 
-# ['SBP','DBP','HR','OXYGEN','RESPIRATION','BODYTEMPERATURE','BLOODSUGAR','HEIGHT','WEIGHT','GCSE','GCSV','GCSM','GCS']=
+vital_signs_ = []
+length = len(icustays_select)
+# merge the IO events
+for i in tqdm.tqdm(range(length)):
+    sample = icustays_select.iloc[i]
+    
+    subject_id = sample['subject_id']
+    hadm_id = sample['hadm_id']
+    stay_id = sample['stay_id']
+    intime = sample['intime']
+    
+    temp = chartevents_vs_dpna[chartevents_vs_dpna['stay_id']==stay_id]
+    temp = temp.sort_values(by=['charttime'])
+    temp_first = temp.drop_duplicates(keep='first',subset=['b_idx'])
+      
+    temp_first_filter_24 = (temp_first['charttime'] - intime) < datetime.timedelta(minutes=1440)
+    temp_first = temp_first[temp_first_filter_24]
+    
+    temp_first_select = temp_first[['b_idx','value']]
+    temp_first_select.loc[:,'b_idx'] = pd.to_numeric(temp_first_select.loc[:,'b_idx'])
+    
+    vitalsign_temp = [subject_id,hadm_id,stay_id,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.]
+    temp_vital_sign = pd.DataFrame([0,1,2,3,4,5,6,7,8,9,10,11,12],index=[0,1,2,3,4,5,6,7,8,9,10,11,12],columns=['b_idx'])
+    
+    temp_vital_sign = temp_vital_sign.merge(temp_first_select,how='left',on=['b_idx'])
+    temp_vital_sign = temp_vital_sign.T
+    columns = ['SBP','DBP','HR','OXYGEN','RESPIRATION','BODYTEMPERATURE','BLOODSUGAR','HEIGHT','WEIGHT','GCSE','GCSV','GCSM','GCS']
+    
+    temp_vital_sign.columns = columns
+    
+    temp_vital_sign = temp_vital_sign.loc['value']
+    temp_vital_sign['GCS'] = temp_vital_sign[['GCSE','GCSV','GCSM']].sum(skipna=True)
+    
+    temp_vital_sign['subject_id'] = subject_id
+    temp_vital_sign['hadm_id'] = hadm_id
+    temp_vital_sign['stay_id'] = stay_id
+    
+    vital_signs_.append(temp_vital_sign)
+
+vital_signs = pd.concat(vital_signs_,axis=1)
+vital_signs = vital_signs.T
+vital_signs = vital_signs.set_index('stay_id')
+
+filepath = os.path.join(db_file_path, 'data_EDis', 'stayid_first_vitalsign.pdpkl')
+vital_signs.to_pickle(filepath)
+
+    
+    
+    
+    
