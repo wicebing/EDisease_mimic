@@ -403,7 +403,12 @@ def train_mimics(EDisease_Model,
 
             if ptloss:
                 print('  ========================================================== ')
-                print('Loss DIM {:.4f}, Loss CLS :{:.4f}, '.format(loss_dim.item(), loss_cls.item())) 
+                print('Ep:{} [{} ({:.0f}%)/ ep_time:{:.0f}min] L DIM:{:.4f} L CLS:{:.4f}'.format(
+                        ep, batch_idx * batch_size,
+                        100. * batch_idx / len(dloader),
+                        (time.time()-t0)*len(dloader)/(60*(batch_idx+1)),
+                        loss_dim.item(), loss_cls.item()
+                        )) 
                 print(predict[:4],predict.shape)
                 print(trg_bool[:4],trg_bool.shape)
                 print('  ========================================================== \n')
