@@ -426,8 +426,8 @@ def train_mimics(EDisease_Model,
             vEDisease_Model = ED_model.EDisease_Model(T_config=T_config,
                                                      S_config=S_config
                                                      )
-        
-            vstc2emb = ED_model.structure_emb(S_config)
+            
+            vstc2emb = ED_model.structure_emb(S_config) if gpus==0 else ED_model.structure_emb_old(S_config)
             vemb_emb = ED_model.emb_emb(T_config)
         
             vdim_model = ED_model.DIM(T_config=T_config,
@@ -464,7 +464,8 @@ def train_mimics(EDisease_Model,
                                      baseBERT,
                                      dloader_v,
                                      parallel=False,
-                                     gpus=gpus)               
+                                     gpus=gpus,
+                                     device=device)               
 
                 fpr, tpr, _ = roc_curve(valres['ground_truth'].values, valres['probability'].values)
                 
