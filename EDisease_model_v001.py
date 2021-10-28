@@ -123,10 +123,7 @@ class EDisease_Model(nn.Module):
     
     def forward(self,
                 things,
-                normalization=None, 
-                noise_scale=0.001,
                 mask_ratio=0.15, 
-                mask_ratio_pi=0.5,
                 token_type_ids=None, 
                 test=False):
         
