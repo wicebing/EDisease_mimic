@@ -209,7 +209,8 @@ def train_mimics(EDisease_Model,
                  mask_ratio=0.33,
                  parallel=parallel,                     
                  noise=True,
-                 gpus=0
+                 gpus=0,
+                 mlp=False,
                  ): 
     
     EDisease_Model.to(device)
@@ -427,7 +428,7 @@ def train_mimics(EDisease_Model,
                                                      S_config=S_config
                                                      )
             
-            vstc2emb = ED_model.structure_emb(S_config) if gpus==0 else ED_model.structure_emb_old(S_config)
+            vstc2emb = ED_model.structure_emb(S_config) if not mlp else ED_model.structure_emb_mlp(S_config)
             vemb_emb = ED_model.emb_emb(T_config)
         
             vdim_model = ED_model.DIM(T_config=T_config,
@@ -630,6 +631,8 @@ def testt_mimics(EDisease_Model,
 if task=='train':
     gpus = 0
     device = f'cuda:{gpus}'
+    
+    mlp = False
     checkpoint_file = '../checkpoint_EDs/EDisease_spectrum_flat'
     if not os.path.isdir(checkpoint_file):
         os.makedirs(checkpoint_file)
@@ -685,11 +688,14 @@ if task=='train':
                  checkpoint_file=checkpoint_file,
                  noise=True,
                  gpus=gpus,
-                 device=device) 
+                 device=device,
+                 mlp=mlp) 
     
 if task=='train_old':
     gpus = 1
     device = f'cuda:{gpus}'
+    
+    mlp = True
     checkpoint_file = '../checkpoint_EDs/EDisease_spectrum_flat_oldstr2emb'
     if not os.path.isdir(checkpoint_file):
         os.makedirs(checkpoint_file)
@@ -699,7 +705,7 @@ if task=='train_old':
                                              S_config=S_config
                                              )
 
-    stc2emb = ED_model.structure_emb_old(S_config)
+    stc2emb = ED_model.structure_emb_mlp(S_config)
     emb_emb = ED_model.emb_emb(T_config)
 
     dim_model = ED_model.DIM(T_config=T_config,
@@ -745,4 +751,5 @@ if task=='train_old':
                  checkpoint_file=checkpoint_file,
                  noise=True,
                  gpus=gpus,
-                 device=device) 
+                 device=device,
+                 mlp=mlp) 

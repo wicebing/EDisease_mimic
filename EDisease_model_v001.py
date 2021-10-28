@@ -81,7 +81,7 @@ class structure_emb(nn.Module):
         self.BERTmodel = BertModel(self.Config)
 
     def forward(self, inputs,attention_mask,position_ids,token_type_ids=None):
-        inputs_embeds = self.float2emb(inputs)
+        inputs_embeds = self.float2emb(10*inputs)
         
         outputs = self.BERTmodel(inputs_embeds=inputs_embeds,
                                  attention_mask=attention_mask,
@@ -90,9 +90,9 @@ class structure_emb(nn.Module):
         
         return outputs[0][:,:1,:]
 
-class structure_emb_old(nn.Module):
+class structure_emb_mlp(nn.Module):
     def __init__(self, config):
-        super(structure_emb_old, self).__init__()
+        super(structure_emb_mlp, self).__init__()
         self.stc2emb = nn.Sequential(nn.Linear(config.structure_size,2*config.hidden_size),
                                      nn.LayerNorm(2*config.hidden_size),
                                      nn.GELU(),
