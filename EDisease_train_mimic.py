@@ -28,7 +28,7 @@ try:
 except:
     task = 'test_nhamcs_cls'
 
-batch_size = 64
+batch_size = 128
 device = 'cuda'
 parallel = False
 
@@ -250,6 +250,7 @@ def train_mimics(EDisease_Model,
             
     total_loss = []
     best_auc = 0
+    auc_record = []
     
     for ep in range(epoch):   
         t0 = time.time()
@@ -478,6 +479,7 @@ def train_mimics(EDisease_Model,
                 fpr, tpr, _ = roc_curve(valres['ground_truth'].values, valres['probability'].values)
                 
                 roc_auc = auc(fpr,tpr)
+                auc_record.append(roc_auc)
 
                 print(f'auc: {roc_auc:.3f} ; === best is {best_auc:.3f} ')
                 
@@ -502,6 +504,9 @@ def train_mimics(EDisease_Model,
                                     parallel=parallel)
             except Exception as e:
                 print(e)
+                
+            pd_total_auc = pd.DataFrame(auc_record)
+            pd_total_auc.to_csv('./loss_record/total_auc.csv', sep = ',')
         
         print('++ Ep Time: {:.1f} Secs ++'.format(time.time()-t0)) 
         total_loss.append(float(epoch_loss/epoch_cases))
@@ -615,8 +620,8 @@ def testt_mimics(EDisease_Model,
 
             columns=['probability', 'ground_truth']
             
-            result = pd.concat([pd.Series(predict_label),
-                                pd.Series(trg_bool)],axis=1)
+            result = pd.concat([pd.Series(predict_label.cpu().detach().numpy()),
+                                pd.Series(trg_bool.cpu().detach().numpy())],axis=1)
             result.columns = columns
             
             total_res_.append(result)
