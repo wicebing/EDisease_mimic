@@ -90,6 +90,25 @@ class structure_emb(nn.Module):
         
         return outputs[0][:,:1,:]
 
+class structure_emb_old(nn.Module):
+    def __init__(self, config):
+        super(structure_emb, self).__init__()
+        self.stc2emb = nn.Sequential(nn.Linear(config.structure_size,2*config.hidden_size),
+                                     nn.LayerNorm(2*config.hidden_size),
+                                     nn.GELU(),
+                                     nn.Dropout(0.5),
+                                     nn.Linear(2*config.hidden_size,2*config.hidden_size),
+                                     nn.LayerNorm(2*config.hidden_size),
+                                     nn.GELU(),
+                                     nn.Dropout(0.5),
+                                     nn.Linear(2*config.hidden_size,config.hidden_size),
+                                     nn.LayerNorm(config.hidden_size),
+                                     )
+
+    def forward(self, inputs,attention_mask=None,position_ids=None,token_type_ids=None):
+        pooled_output = self.stc2emb(inputs)
+        return pooled_output
+
 class emb_emb(nn.Module):
     def __init__(self, config):
         super(emb_emb, self).__init__()

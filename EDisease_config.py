@@ -29,6 +29,7 @@ class StructrualConfig(object):
     intermediate_size = 64
     num_hidden_layers = 4
     classifier_num = 2
+    structure_size = 60
 
     
     

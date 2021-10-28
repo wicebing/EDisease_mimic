@@ -32,11 +32,11 @@ batch_size = 128
 device = 'cuda'
 parallel = False
 
-checkpoint_file = '../checkpoint_EDs/EDisease_spectrum_flat'
 alpha=1
 beta=1
 gamma=0.1
 
+checkpoint_file = '../checkpoint_EDs/EDisease_spectrum_flat'
 if not os.path.isdir(checkpoint_file):
     os.makedirs(checkpoint_file)
     print(f' make dir {checkpoint_file}')
@@ -220,7 +220,8 @@ def train_mimics(EDisease_Model,
                  mask_ratio=0.33,
                  parallel=parallel,                     
                  checkpoint_file=checkpoint_file,
-                 noise=True
+                 noise=True,
+                 gpus=0
                  ): 
     
     EDisease_Model.to(device)
@@ -246,7 +247,7 @@ def train_mimics(EDisease_Model,
         baseBERT = torch.nn.DataParallel(baseBERT)
     else:
         if device == 'cuda':
-            torch.cuda.set_device(0)
+            torch.cuda.set_device(gpus)
             
     total_loss = []
     best_auc = 0
@@ -636,6 +637,10 @@ def testt_mimics(EDisease_Model,
             
 if task=='train':
 
+    checkpoint_file = '../checkpoint_EDs/EDisease_spectrum_flat'
+    if not os.path.isdir(checkpoint_file):
+        os.makedirs(checkpoint_file)
+        print(f' make dir {checkpoint_file}')
     
     EDisease_Model = ED_model.EDisease_Model(T_config=T_config,
                                              S_config=S_config
@@ -685,4 +690,62 @@ if task=='train':
                  mask_ratio=0.33,
                  parallel=parallel,                     
                  checkpoint_file=checkpoint_file,
-                 noise=True) 
+                 noise=True,
+                 gpus=0) 
+    
+if task=='train_old':
+    checkpoint_file = '../checkpoint_EDs/EDisease_spectrum_flat_oldstr2emb'
+    if not os.path.isdir(checkpoint_file):
+        os.makedirs(checkpoint_file)
+        print(f' make dir {checkpoint_file}')
+
+    EDisease_Model = ED_model.EDisease_Model(T_config=T_config,
+                                             S_config=S_config
+                                             )
+
+    stc2emb = ED_model.structure_emb_old()(S_config)
+    emb_emb = ED_model.emb_emb(T_config)
+
+    dim_model = ED_model.DIM(T_config=T_config,
+                              alpha=alpha,
+                              beta=beta,
+                              gamma=gamma)
+    
+    try: 
+        EDisease_Model = load_checkpoint(checkpoint_file,'EDisease_Model_best.pth',EDisease_Model)
+        print(' ** Complete Load CLS EDisease Model ** ')
+    except:
+        print('*** No Pretrain_EDisease_CLS_Model ***')
+
+    try:     
+        dim_model = load_checkpoint(checkpoint_file,'dim_model_best.pth',dim_model)
+    except:
+        print('*** No Pretrain_dim_model ***')
+
+    try:     
+        stc2emb = load_checkpoint(checkpoint_file,'stc2emb_best.pth',stc2emb)
+    except:
+        print('*** No Pretrain_stc2emb ***')
+
+    try:     
+        emb_emb = load_checkpoint(checkpoint_file,'emb_emb_best.pth',emb_emb)
+    except:
+        print('*** No Pretrain_emb_emb ***')
+
+# ====
+    train_mimics(EDisease_Model=EDisease_Model,
+                 stc2emb=stc2emb,
+                 emb_emb=emb_emb,
+                 dim_model=dim_model,
+                 baseBERT=baseBERT,
+                 dloader=DL_train,
+                 dloader_v=DL_valid, 
+                 lr=1e-5,
+                 epoch=100,
+                 log_interval=10,
+                 noise_scale=0.002,
+                 mask_ratio=0.33,
+                 parallel=parallel,                     
+                 checkpoint_file=checkpoint_file,
+                 noise=True,
+                 gpus=1) 
