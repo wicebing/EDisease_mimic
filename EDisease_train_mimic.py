@@ -36,11 +36,6 @@ alpha=1
 beta=1
 gamma=0.1
 
-checkpoint_file = '../checkpoint_EDs/EDisease_spectrum_flat'
-if not os.path.isdir(checkpoint_file):
-    os.makedirs(checkpoint_file)
-    print(f' make dir {checkpoint_file}')
-
 # fix the BERT version
 model_name = "bert-base-multilingual-cased"
 T_config = EDiseaseConfig()
@@ -49,14 +44,6 @@ S_config = StructrualConfig()
 baseBERT = ED_model.adjBERTmodel(bert_ver=model_name,T_config=T_config,fixBERT=True)
 BERT_tokenizer = AutoTokenizer.from_pretrained(model_name)
 
-try: 
-    baseBERT = load_checkpoint('../modelhouse','BERT_ml_pretrain4.pth',baseBERT)
-    print(' ** Complete Load baseBERT Model ** ')
-except:
-    print('*** No Pretrain_baseBERT_Model ***')
-
-for param in baseBERT.parameters():
-    param.requires_grad = False   
 print(' ** pretrained BERT WEIGHT ** ')
 print('baseBERT PARAMETERS: ' ,count_parameters(baseBERT))
 
@@ -213,13 +200,13 @@ def train_mimics(EDisease_Model,
                  baseBERT,
                  dloader,
                  dloader_v,
+                 checkpoint_file,
                  lr=1e-4,
                  epoch=100,
                  log_interval=10,
                  noise_scale=0.002,
                  mask_ratio=0.33,
                  parallel=parallel,                     
-                 checkpoint_file=checkpoint_file,
                  noise=True,
                  gpus=0
                  ): 
@@ -475,7 +462,8 @@ def train_mimics(EDisease_Model,
                                      vdim_model,
                                      baseBERT,
                                      dloader_v,
-                                     parallel=False)               
+                                     parallel=False,
+                                     gpus=gpus)               
 
                 fpr, tpr, _ = roc_curve(valres['ground_truth'].values, valres['probability'].values)
                 
@@ -507,12 +495,12 @@ def train_mimics(EDisease_Model,
                 print(e)
                 
             pd_total_auc = pd.DataFrame(auc_record)
-            pd_total_auc.to_csv('./loss_record/total_auc.csv', sep = ',')
+            pd_total_auc.to_csv(f'./loss_record/total_auc_{gpus}.csv', sep = ',')
         
         print('++ Ep Time: {:.1f} Secs ++'.format(time.time()-t0)) 
         total_loss.append(float(epoch_loss/epoch_cases))
         pd_total_loss = pd.DataFrame(total_loss)
-        pd_total_loss.to_csv('./loss_record/total_loss.csv', sep = ',')
+        pd_total_loss.to_csv(f'./loss_record/total_loss_{gpus}.csv', sep = ',')
     print(total_loss) 
 
 
@@ -522,7 +510,8 @@ def testt_mimics(EDisease_Model,
                  dim_model,
                  baseBERT,
                  dloader,
-                 parallel=parallel,                     
+                 parallel=parallel,
+                 gpus=0                     
                  ): 
     
     EDisease_Model.to(device)
@@ -538,7 +527,7 @@ def testt_mimics(EDisease_Model,
     dim_model.eval()
         
     if device == 'cuda':
-        torch.cuda.set_device(0)
+        torch.cuda.set_device(gpus)
     
     total_res_ = []
     
