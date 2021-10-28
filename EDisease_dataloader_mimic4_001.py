@@ -66,7 +66,7 @@ class mimic_Dataset(Dataset):
         if self.dsidx is None:
             hadm_id = self.set_hadmid[index]
         else: 
-            hadm_id = self.set_hadmid[self.dsidx[index]]        
+            hadm_id = self.dsidx[index]
         
         sample = self.icustays_select.loc[hadm_id]
         subject_id = sample['subject_id']
@@ -127,7 +127,7 @@ class mimic_Dataset(Dataset):
                  'structure_position_ids': structure_position_ids_tensor,
                  'hx': hx_token_ids,
                  'trg':trg_tensor,
-                 }             
+                 }
           
         return datas
     

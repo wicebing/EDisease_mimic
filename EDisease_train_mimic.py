@@ -4,7 +4,7 @@ import unicodedata
 import random
 import string
 import re
-import sys, pickle
+import sys, pickle, math
 import numpy as np
 import pandas as pd
 import torch
@@ -127,6 +127,12 @@ structurals_idx = pd.DataFrame(structurals,index=structurals)
 structurals_idx.columns = ['name']
 structurals_idx['s_idx'] = 10+np.arange(len(structurals))
 
+# oversampling to balance +/-
+pos = trainset_temp[trainset_temp['los'] > 7]['hadm_id'].values
+neg = trainset_temp[trainset_temp['los'] <=7]['hadm_id'].values
+ratio = len(neg) / len(pos)
+balance_train_set_hadmid = round(ratio)*list(pos)+list(neg)
+
 ds_train = dataloader.mimic_Dataset(set_hadmid=train_set_hadmid,
                                     icustays_select=icustays_select_sort_dropduplicate,
                                     agegender=agegender,
@@ -143,7 +149,7 @@ ds_train = dataloader.mimic_Dataset(set_hadmid=train_set_hadmid,
                                     io_24_mean=io_24_mean,
                                     io_24_std=io_24_std,
                                     structurals_idx=structurals_idx,
-                                    dsidx=None)
+                                    dsidx=balance_train_set_hadmid)
 
 ds_valid = dataloader.mimic_Dataset(set_hadmid=val_set_hadmid,
                                     icustays_select=icustays_select_sort_dropduplicate,
@@ -395,6 +401,8 @@ def train_mimics(EDisease_Model,
             if ptloss:
                 print('  ========================================================== ')
                 print('Loss DIM {:.4f}, Loss CLS :{:.4f}, '.format(loss_dim.item(), loss_cls.item())) 
+                print(predict,predict.shape)
+                print(trg_bool,trg_bool.shape)
                 print('  ========================================================== \n')
 
         if ep % 1 ==0:
