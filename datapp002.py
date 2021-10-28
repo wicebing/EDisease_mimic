@@ -750,6 +750,22 @@ db_file_path = '../datahouse/mimic-iv-0.4'
 # # =====================================================
 # # step 6: Add ICD diagnosis
 
+# filepath = os.path.join(db_file_path, 'hosp', 'diagnoses_icd.csv')
+# diagnoses_icd = pd.read_csv(filepath)
+
+# filepath = os.path.join(db_file_path, 'hosp', 'd_icd_diagnoses.csv')
+# d_icd_diagnoses = pd.read_csv(filepath)
+
+# diagnoses_icd_merge = diagnoses_icd.merge(d_icd_diagnoses,how='left',on=['icd_code','icd_version'])
+
+# diagnoses_icd_merge = diagnoses_icd_merge.dropna(axis=0,subset=['long_title'])
+
+# filepath = os.path.join(db_file_path, 'data_EDis', 'diagnoses_icd_merge_dropna.pdpkl')
+# diagnoses_icd_merge.to_pickle(filepath)
+
+# # =====================================================
+# # step 6: all the preproceesing data
+
 filepath = os.path.join(db_file_path, 'data_EDis', 'select_temp0.pdpkl')
 icustays_select = pd.read_pickle(filepath)
 
@@ -762,16 +778,8 @@ vital_signs = pd.read_pickle(filepath)
 filepath = os.path.join(db_file_path, 'data_EDis', 'hadmid_first_lab.pdpkl')
 hadmid_first_lab = pd.read_pickle(filepath)
 
-# filepath = os.path.join(db_file_path, 'data_EDis', 'labevents_merge_dropna_clean.pdpkl')
-# labevents_merge_dropna_clean = pd.read_pickle(filepath)
+filepath = os.path.join(db_file_path, 'data_EDis', 'diagnoses_icd_merge_dropna.pdpkl')
+diagnoses_icd_merge_dropna = pd.read_pickle(filepath)
 
-# filepath = os.path.join(db_file_path, 'data_EDis', 'chartevents_vitalsisn_clean.pdpkl')
-# chartevents_vs_dpna = pd.read_pickle(filepath)
-
-filepath = os.path.join(db_file_path, 'hosp', 'diagnoses_icd.csv')
-diagnoses_icd = pd.read_csv(filepath)
-
-filepath = os.path.join(db_file_path, 'hosp', 'd_icd_diagnoses.csv')
-d_icd_diagnoses = pd.read_csv(filepath)
 
 
