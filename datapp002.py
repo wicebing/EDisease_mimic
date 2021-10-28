@@ -432,8 +432,8 @@ db_file_path = '../datahouse/mimic-iv-0.4'
 # filepath = os.path.join(db_file_path, 'hosp', 'labevents.csv')
 # labevents = pd.read_csv(filepath)
 
-filepath = os.path.join(db_file_path, 'data_EDis', 'b_d_labitems.csv')
-b_d_labitems = pd.read_csv(filepath)
+# filepath = os.path.join(db_file_path, 'data_EDis', 'b_d_labitems.csv')
+# b_d_labitems = pd.read_csv(filepath)
 
 # labevents_merge = labevents.merge(b_d_labitems,how='left',on=['itemid'])
 
@@ -445,233 +445,305 @@ b_d_labitems = pd.read_csv(filepath)
 
 # # =====================================================
 # # step 5a: clean labevents
-filepath = os.path.join(db_file_path, 'data_EDis', 'labevents_merge_dropna_0.pdpkl')
-labevents_merge_dropna = pd.read_pickle(filepath)
+# filepath = os.path.join(db_file_path, 'data_EDis', 'labevents_merge_dropna_0.pdpkl')
+# labevents_merge_dropna = pd.read_pickle(filepath)
 
 # # =====================================================
 # # step 5a1: clean Base Excess
-tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==50802].index
-temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
-temp_value_idx = temp_value[temp_value<-100].index
-labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
-temp_value_idx = temp_value[temp_value>100].index
-labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+# tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==50802].index
+# temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
+# temp_value_idx = temp_value[temp_value<-100].index
+# labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+# temp_value_idx = temp_value[temp_value>100].index
+# labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
 
-# # step 5a2: clean Chloride, Whole Blood
-tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==50806].index
-temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
-temp_value_idx = temp_value[temp_value<50].index
-labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
-temp_value_idx = temp_value[temp_value>150].index
-labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+# # # step 5a2: clean Chloride, Whole Blood
+# tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==50806].index
+# temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
+# temp_value_idx = temp_value[temp_value<50].index
+# labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+# temp_value_idx = temp_value[temp_value>150].index
+# labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
 
-# # step 5a3: clean Free Calcium
-tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==50808].index
-temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
-temp_value_idx = temp_value[temp_value<0].index
-labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
-temp_value_idx = temp_value[temp_value>4.5].index
-labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+# # # step 5a3: clean Free Calcium
+# tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==50808].index
+# temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
+# temp_value_idx = temp_value[temp_value<0].index
+# labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+# temp_value_idx = temp_value[temp_value>4.5].index
+# labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
 
-# # step 5a4: clean Glucose
-tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==50809].index
-temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
-temp_value_idx = temp_value[temp_value<0].index
-labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
-temp_value_idx = temp_value[temp_value>3000].index
-labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+# # # step 5a4: clean Glucose
+# tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==50809].index
+# temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
+# temp_value_idx = temp_value[temp_value<0].index
+# labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+# temp_value_idx = temp_value[temp_value>3000].index
+# labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
 
-# # step 5a5: clean Hemoglobin
-tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==50811].index
-temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
-temp_value_idx = temp_value[temp_value<0.1].index
-labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
-temp_value_idx = temp_value[temp_value>40].index
-labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+# # # step 5a5: clean Hemoglobin
+# tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==50811].index
+# temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
+# temp_value_idx = temp_value[temp_value<0.1].index
+# labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+# temp_value_idx = temp_value[temp_value>40].index
+# labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
 
-# # step 5a6: clean Lactate
-tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==50813].index
-temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
-temp_value_idx = temp_value[temp_value<0].index
-labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
-temp_value_idx = temp_value[temp_value>50].index
-labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+# # # step 5a6: clean Lactate
+# tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==50813].index
+# temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
+# temp_value_idx = temp_value[temp_value<0].index
+# labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+# temp_value_idx = temp_value[temp_value>50].index
+# labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
 
-# # step 5a7: clean pH
-tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==50820].index
-temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
-temp_value_idx = temp_value[temp_value<4].index
-labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
-temp_value_idx = temp_value[temp_value>9].index
-labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+# # # step 5a7: clean pH
+# tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==50820].index
+# temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
+# temp_value_idx = temp_value[temp_value<4].index
+# labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+# temp_value_idx = temp_value[temp_value>9].index
+# labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
 
-# # step 5a8: clean Sodium, Whole Blood
-tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==50824].index
-temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
-temp_value_idx = temp_value[temp_value<70].index
-labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
-temp_value_idx = temp_value[temp_value>250].index
-labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+# # # step 5a8: clean Sodium, Whole Blood
+# tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==50824].index
+# temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
+# temp_value_idx = temp_value[temp_value<70].index
+# labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+# temp_value_idx = temp_value[temp_value>250].index
+# labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
 
-# # step 5a9: clean Alanine Aminotransferase (ALT)
-tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==50861].index
-temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
-temp_value_idx = temp_value[temp_value<1].index
-labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
-temp_value_idx = temp_value[temp_value>20000].index
-labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+# # # step 5a9: clean Alanine Aminotransferase (ALT)
+# tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==50861].index
+# temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
+# temp_value_idx = temp_value[temp_value<1].index
+# labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+# temp_value_idx = temp_value[temp_value>20000].index
+# labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
 
-# # step 5a10: clean Albumin
-tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==50862].index
-temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
-temp_value_idx = temp_value[temp_value<0].index
-labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
-temp_value_idx = temp_value[temp_value>10].index
-labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+# # # step 5a10: clean Albumin
+# tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==50862].index
+# temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
+# temp_value_idx = temp_value[temp_value<0].index
+# labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+# temp_value_idx = temp_value[temp_value>10].index
+# labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
 
-# # step 5a11: clean Alkaline Phosphatase
-tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==50863].index
-temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
-temp_value_idx = temp_value[temp_value<1].index
-labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
-temp_value_idx = temp_value[temp_value>6000].index
-labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+# # # step 5a11: clean Alkaline Phosphatase
+# tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==50863].index
+# temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
+# temp_value_idx = temp_value[temp_value<1].index
+# labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+# temp_value_idx = temp_value[temp_value>6000].index
+# labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
 
-# # step 5a12 skip Ammonia
-# # step 5a12: clean Amylase
-tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==50867].index
-temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
-temp_value_idx = temp_value[temp_value<0].index
-labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
-temp_value_idx = temp_value[temp_value>12000].index
-labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+# # # step 5a12 skip Ammonia
+# # # step 5a12: clean Amylase
+# tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==50867].index
+# temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
+# temp_value_idx = temp_value[temp_value<0].index
+# labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+# temp_value_idx = temp_value[temp_value>12000].index
+# labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
 
-# # step 5a13: skip Asparate Aminotransferase (AST) Bilirubin, Direct Bilirubin, Total
-# # step 5a13: clean Calcium, Total
-tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==50893].index
-temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
-temp_value_idx = temp_value[temp_value<0.1].index
-labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
-temp_value_idx = temp_value[temp_value>40].index
-labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+# # # step 5a13: skip Asparate Aminotransferase (AST) Bilirubin, Direct Bilirubin, Total
+# # # step 5a13: clean Calcium, Total
+# tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==50893].index
+# temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
+# temp_value_idx = temp_value[temp_value<0.1].index
+# labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+# temp_value_idx = temp_value[temp_value>40].index
+# labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
 
-# # step 5a14: skip Chloride Creatine Kinase (CK)
-# # step 5a14: clean Creatinine
-tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==50912].index
-temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
-temp_value_idx = temp_value[temp_value<0.1].index
-labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
-temp_value_idx = temp_value[temp_value>45].index
-labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+# # # step 5a14: skip Chloride Creatine Kinase (CK)
+# # # step 5a14: clean Creatinine
+# tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==50912].index
+# temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
+# temp_value_idx = temp_value[temp_value<0.1].index
+# labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+# temp_value_idx = temp_value[temp_value>45].index
+# labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
 
-# # step 5a15: skip D-Dimer
-# # step 5a15: clean Glucose =50809
-tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==50931].index
-temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
-temp_value_idx = temp_value[temp_value<0.1].index
-labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
-temp_value_idx = temp_value[temp_value>6000].index
-labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+# # # step 5a15: skip D-Dimer
+# # # step 5a15: clean Glucose =50809
+# tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==50931].index
+# temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
+# temp_value_idx = temp_value[temp_value<0.1].index
+# labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+# temp_value_idx = temp_value[temp_value>6000].index
+# labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
 
-# # step 5a16: clean Lipase
-tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==50956].index
-temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
-temp_value_idx = temp_value[temp_value<0.1].index
-labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
-temp_value_idx = temp_value[temp_value>40000].index
-labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+# # # step 5a16: clean Lipase
+# tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==50956].index
+# temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
+# temp_value_idx = temp_value[temp_value<0.1].index
+# labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+# temp_value_idx = temp_value[temp_value>40000].index
+# labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
 
-# # step 5a17: clean Magnesium
-tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==50960].index
-temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
-temp_value_idx = temp_value[temp_value<0.1].index
-labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
-temp_value_idx = temp_value[temp_value>15].index
-labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+# # # step 5a17: clean Magnesium
+# tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==50960].index
+# temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
+# temp_value_idx = temp_value[temp_value<0.1].index
+# labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+# temp_value_idx = temp_value[temp_value>15].index
+# labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
 
-# # step 5a18: clean Phosphate
-tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==50970].index
-temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
-temp_value_idx = temp_value[temp_value<0.1].index
-labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
-temp_value_idx = temp_value[temp_value>15].index
-labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+# # # step 5a18: clean Phosphate
+# tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==50970].index
+# temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
+# temp_value_idx = temp_value[temp_value<0.1].index
+# labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+# temp_value_idx = temp_value[temp_value>15].index
+# labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
 
-# # step 5a19: clean Potassium
-tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==50971].index
-temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
-temp_value_idx = temp_value[temp_value<0.1].index
-labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
-temp_value_idx = temp_value[temp_value>15].index
-labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+# # # step 5a19: clean Potassium
+# tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==50971].index
+# temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
+# temp_value_idx = temp_value[temp_value<0.1].index
+# labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+# temp_value_idx = temp_value[temp_value>15].index
+# labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
 
-# # step 5a20: skip Sodium Thyroxine (T4), Free Troponin T  Urea Nitrogen Bands Blasts Eosinophils
-# # step 5a20: clean Hematocrit
-tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==51221].index
-temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
-temp_value_idx = temp_value[temp_value<0.1].index
-labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
-temp_value_idx = temp_value[temp_value>100].index
-labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+# # # step 5a20: skip Sodium Thyroxine (T4), Free Troponin T  Urea Nitrogen Bands Blasts Eosinophils
+# # # step 5a20: clean Hematocrit
+# tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==51221].index
+# temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
+# temp_value_idx = temp_value[temp_value<0.1].index
+# labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+# temp_value_idx = temp_value[temp_value>100].index
+# labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
 
-# # step 5a21: clean Hemoglobin = 50811
-tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==51222].index
-temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
-temp_value_idx = temp_value[temp_value<0.1].index
-labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
-temp_value_idx = temp_value[temp_value>40].index
-labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+# # # step 5a21: clean Hemoglobin = 50811
+# tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==51222].index
+# temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
+# temp_value_idx = temp_value[temp_value<0.1].index
+# labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+# temp_value_idx = temp_value[temp_value>40].index
+# labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
 
-# # step 5a22: skip INR(PT) Lymphocytes Lymphocytes, Percent
-# # step 5a22: clean MCH 
-tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==51248].index
-temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
-temp_value_idx = temp_value[temp_value<0.1].index
-labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
-temp_value_idx = temp_value[temp_value>100].index
-labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+# # # step 5a22: skip INR(PT) Lymphocytes Lymphocytes, Percent
+# # # step 5a22: clean MCH 
+# tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==51248].index
+# temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
+# temp_value_idx = temp_value[temp_value<0.1].index
+# labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+# temp_value_idx = temp_value[temp_value>100].index
+# labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
 
-# # step 5a23: clean MCHC 
-tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==51249].index
-temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
-temp_value_idx = temp_value[temp_value<0.1].index
-labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
-temp_value_idx = temp_value[temp_value>100].index
-labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+# # # step 5a23: clean MCHC 
+# tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==51249].index
+# temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
+# temp_value_idx = temp_value[temp_value<0.1].index
+# labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+# temp_value_idx = temp_value[temp_value>100].index
+# labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
 
-# # step 5a24: skip MCV Myelocytes Neutrophils Platelet Count PTT
-# # step 5a24: clean White Blood Cells 
-tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==51301].index
-temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
-temp_value_idx = temp_value[temp_value<0].index
-labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
-temp_value_idx = temp_value[temp_value>1000].index
-labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+# # # step 5a24: skip MCV Myelocytes Neutrophils Platelet Count PTT
+# # # step 5a24: clean White Blood Cells 
+# tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==51301].index
+# temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
+# temp_value_idx = temp_value[temp_value<0].index
+# labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+# temp_value_idx = temp_value[temp_value>1000].index
+# labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
 
-# # step 5a25: clean RBC 
-tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==51493].index
-temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
-temp_value_idx = temp_value[temp_value<0].index
-labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
-temp_value_idx = temp_value[temp_value>200].index
-labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+# # # step 5a25: clean RBC 
+# tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==51493].index
+# temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
+# temp_value_idx = temp_value[temp_value<0].index
+# labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+# temp_value_idx = temp_value[temp_value>200].index
+# labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
 
-# # step 5a26: clean WBC 
-tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==51516].index
-temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
-temp_value_idx = temp_value[temp_value<0].index
-labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
-temp_value_idx = temp_value[temp_value>200].index
-labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+# # # step 5a26: clean WBC 
+# tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==51516].index
+# temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
+# temp_value_idx = temp_value[temp_value<0].index
+# labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
+# temp_value_idx = temp_value[temp_value>200].index
+# labevents_merge_dropna = labevents_merge_dropna.drop(temp_value_idx)
 
 # # step 5a27: skip Hematocrit High-Sensitivity CRP  INR(PT) White Blood Cells Creatinine, Whole Blood Chloride....# # =====================================================
 # # step 5a27: convert Ca total to free Ca /4
-tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==50893].index
-temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
+# tempidx = labevents_merge_dropna[labevents_merge_dropna['itemid']==50893].index
+# temp_value =labevents_merge_dropna.loc[tempidx,'valuenum']
+# labevents_merge_dropna.loc[tempidx,'valuenum']=temp_value/4
 
-temp0 = labevents_merge_dropna.groupby('itemid')
-temp1 = temp0['valuenum'].aggregate(['count','min', 'max', 'mean', 'median', 'std'])
-temp1 = temp1.reset_index()
-temp1 = temp1.merge(b_d_labitems,how='left',on=['itemid'])
+# labevents_merge_dropna = labevents_merge_dropna.dropna(axis=0,subset=['valuenum'])
 
-temp1.to_csv(os.path.join(db_file_path, 'data_EDis', 'b_lab_sel.csv'))
+
+# filepath = os.path.join(db_file_path, 'data_EDis', 'labevents_merge_dropna_clean.pdpkl')
+# labevents_merge_dropna.to_pickle(filepath)
+
+# temp0 = labevents_merge_dropna.groupby('itemid')
+# temp1 = temp0['valuenum'].aggregate(['count','min', 'max', 'mean', 'median', 'std'])
+# temp1 = temp1.reset_index()
+# temp1 = temp1.merge(b_d_labitems,how='left',on=['itemid'])
+
+# filepath = os.path.join(db_file_path, 'data_EDis', 'b_lab_sel_check.csv')
+# temp1.to_csv(filepath)
+
+# # =====================================================
+# # step 5B: Extract labdata/ combine b_lab_sel_check elements with addition bb_idx column by manual cluster
+
+filepath = os.path.join(db_file_path, 'data_EDis', 'b_lab_select.csv')
+b_lab_select = pd.read_csv(filepath)
+b_lab_select = b_lab_select[['itemid','bb_idx']]
+
+column_temp = b_lab_select['bb_idx']
+column_temp = column_temp.drop_duplicates()
+column_lab = list(column_temp.values)
+
+filepath = os.path.join(db_file_path, 'data_EDis', 'labevents_merge_dropna_clean.pdpkl')
+labevents_merge_dropna_clean = pd.read_pickle(filepath)
+
+labevents_merge_dropna_clean_combine = labevents_merge_dropna_clean.merge(b_lab_select,how='left',on=['itemid'])
+labevents_merge_dropna_clean_combine.loc[:,['charttime']] = pd.to_datetime(labevents_merge_dropna_clean_combine['charttime'])
+
+filepath = os.path.join(db_file_path, 'data_EDis', 'select_temp0.pdpkl')
+icustays_select = pd.read_pickle(filepath)
+
+labs_ = []
+length = len(icustays_select)
+# merge the IO events
+for i in tqdm.tqdm(range(length)):
+    sample = icustays_select.iloc[i]
+    
+    subject_id = sample['subject_id']
+    hadm_id = sample['hadm_id']
+    stay_id = sample['stay_id']
+    intime = sample['intime']
+    
+    temp = labevents_merge_dropna_clean_combine[labevents_merge_dropna_clean_combine['hadm_id']==hadm_id]
+    temp = temp.sort_values(by=['charttime'])
+    temp_first = temp.drop_duplicates(keep='first',subset=['bb_idx'])
+      
+    temp_first_filter_24 = (temp_first['charttime'] - intime) < datetime.timedelta(minutes=1440)
+    temp_first = temp_first[temp_first_filter_24]
+    
+    temp_first_select = temp_first[['bb_idx','valuenum']]
+    
+    temp_vital_sign = pd.DataFrame(column_lab,index=column_lab,columns=['bb_idx'])
+    
+    temp_vital_sign = temp_vital_sign.merge(temp_first_select,how='left',on=['bb_idx'])
+    temp_vital_sign.loc[:,'valuenum'] = pd.to_numeric(temp_vital_sign.loc[:,'valuenum'])
+    temp_vital_sign = temp_vital_sign.T
+    
+    temp_vital_sign.columns = column_lab
+    
+    temp_vital_sign = temp_vital_sign.loc['valuenum']
+
+
+    temp_vital_sign.name = hadm_id
+    
+    labs_.append(temp_vital_sign)
+
+labs = pd.concat(labs_,axis=1)
+labs = labs.T
+labs = labs.reset_index()
+labs = labs.drop_duplicates(subset=['index'])
+labs = labs.set_index('index')
+
+filepath = os.path.join(db_file_path, 'data_EDis', 'hadmid_first_lab.pdpkl')
+labs.to_pickle(filepath)
