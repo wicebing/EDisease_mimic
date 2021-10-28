@@ -28,7 +28,7 @@ try:
 except:
     task = 'test_nhamcs_cls'
 
-batch_size = 8
+batch_size = 64
 device = 'cuda'
 parallel = False
 
@@ -396,9 +396,7 @@ def train_mimics(EDisease_Model,
             model_optimizer_dim.step()
             model_optimizer_s2e.step()
             model_optimizer_e2e.step()
-            
-            return predict, trg_bool
-                
+                     
             with torch.no_grad():
                 epoch_loss += loss.item()*bs
                 epoch_cases += bs
@@ -406,8 +404,8 @@ def train_mimics(EDisease_Model,
             if ptloss:
                 print('  ========================================================== ')
                 print('Loss DIM {:.4f}, Loss CLS :{:.4f}, '.format(loss_dim.item(), loss_cls.item())) 
-                print(predict,predict.shape)
-                print(trg_bool,trg_bool.shape)
+                print(predict[:4],predict.shape)
+                print(trg_bool[:4],trg_bool.shape)
                 print('  ========================================================== \n')
 
         if ep % 1 ==0:
@@ -663,7 +661,7 @@ if task=='train':
         print('*** No Pretrain_emb_emb ***')
 
 # ====
-    predict, trg_bool = train_mimics(EDisease_Model=EDisease_Model,
+    train_mimics(EDisease_Model=EDisease_Model,
                  stc2emb=stc2emb,
                  emb_emb=emb_emb,
                  dim_model=dim_model,
