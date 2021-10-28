@@ -692,7 +692,7 @@ if task=='train_old':
                                              S_config=S_config
                                              )
 
-    stc2emb = ED_model.structure_emb_old()(S_config)
+    stc2emb = ED_model.structure_emb_old(S_config)
     emb_emb = ED_model.emb_emb(T_config)
 
     dim_model = ED_model.DIM(T_config=T_config,

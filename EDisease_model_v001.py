@@ -92,7 +92,7 @@ class structure_emb(nn.Module):
 
 class structure_emb_old(nn.Module):
     def __init__(self, config):
-        super(structure_emb, self).__init__()
+        super(structure_emb_old, self).__init__()
         self.stc2emb = nn.Sequential(nn.Linear(config.structure_size,2*config.hidden_size),
                                      nn.LayerNorm(2*config.hidden_size),
                                      nn.GELU(),
