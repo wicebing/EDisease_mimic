@@ -58,17 +58,24 @@ hadmid_first_lab = pd.read_pickle(filepath)
 filepath = os.path.join(db_file_path, 'data_EDis', 'diagnoses_icd_merge_dropna.pdpkl')
 diagnoses_icd_merge_dropna = pd.read_pickle(filepath)
 
+# split the dataset
 train_set_hadmid = hadmid_first_lab.sample(frac=0.85,random_state=0).index
 temp_set_hadmid = hadmid_first_lab.drop(train_set_hadmid)
 val_set_hadmid = temp_set_hadmid.sample(frac=0.25,random_state=0).index
 test_set_hadmid = temp_set_hadmid.drop(val_set_hadmid).index
 
+# get the training set mean/std
 train_set_lab_mean = hadmid_first_lab.loc[train_set_hadmid].mean()
 train_set_lab_std = hadmid_first_lab.loc[train_set_hadmid].std()
+hadmid_first_lab_keys = hadmid_first_lab.keys()
 
 trainset_temp = pd.DataFrame(train_set_hadmid)
 trainset_temp.columns = ['hadm_id']
 trainset_temp = trainset_temp.merge(icustays_select,how='left',on=['hadm_id'])
+
+io_24_keys = trainset_temp[['io_24']].keys()
+io_24_mean = trainset_temp[['io_24']].mean()
+io_24_std = trainset_temp[['io_24']].std()
 
 trainset_subjectid = trainset_temp[['subject_id']].drop_duplicates()
 agegender_keys = agegender.keys()
@@ -89,6 +96,16 @@ trainset_vitalsign_temp = trainset_vitalsign_temp.set_index('stay_id')
 
 train_set_vitalsign_mean = trainset_vitalsign_temp.mean()
 train_set_vitalsign_std = trainset_vitalsign_temp.std()
+
+# remove the duplicates
+icustays_select_sort = icustays_select.sort_values(['intime'])
+icustays_select_sort_dropduplicate = icustays_select_sort.drop_duplicates(subset=['hadm_id'])
+icustays_select_sort_dropduplicate = icustays_select_sort_dropduplicate.set_index('hadm_id')
+
+structurals = [*agegender_keys,*vital_signs_keys,*hadmid_first_lab_keys,*io_24_keys]
+structurals_idx = pd.DataFrame(structurals,index=structurals)
+structurals_idx.columns = ['name']
+structurals_idx['s_idx'] = 10+np.arange(len(structurals))
     
 def train_NHAMCS(EDisease_Model,
                  stc2emb,
