@@ -19,7 +19,7 @@ from EDisease_utils import count_parameters, save_checkpoint, load_checkpoint
 from EDisease_config import EDiseaseConfig, StructrualConfig
 import EDisease_model_v001 as ED_model
 
-import AIED_dataloader_nhamcs as dataloader
+import EDisease_dataloader_mimic4_001 as dataloader
 
 try:
     task = sys.argv[1]
@@ -39,8 +39,16 @@ gamma=0.1
 if not os.path.isdir(checkpoint_file):
     os.makedirs(checkpoint_file)
     print(f' make dir {checkpoint_file}')
-    
 
+# fix the BERT version
+model_name = "bert-base-multilingual-cased"
+T_config = EDiseaseConfig()
+S_config = StructrualConfig()
+
+baseBERT = ED_model.adjBERTmodel(bert_ver=model_name,T_config=T_config,fixBERT=True)
+BERT_tokenizer = AutoTokenizer.from_pretrained(model_name)
+
+# load data
 db_file_path = '../datahouse/mimic-iv-0.4'
 
 filepath = os.path.join(db_file_path, 'data_EDis', 'select_temp0.pdpkl')
@@ -106,6 +114,60 @@ structurals = [*agegender_keys,*vital_signs_keys,*hadmid_first_lab_keys,*io_24_k
 structurals_idx = pd.DataFrame(structurals,index=structurals)
 structurals_idx.columns = ['name']
 structurals_idx['s_idx'] = 10+np.arange(len(structurals))
+
+ds_train = dataloader.mimic_Dataset(set_hadmid=train_set_hadmid,
+                                    icustays_select=icustays_select_sort_dropduplicate,
+                                    agegender=agegender,
+                                    vital_signs=vital_signs,
+                                    hadmid_first_lab=hadmid_first_lab,
+                                    diagnoses_icd_merge_dropna=diagnoses_icd_merge_dropna,
+                                    tokanizer=BERT_tokenizer,
+                                    train_set_lab_mean=train_set_lab_mean,
+                                    train_set_lab_std=train_set_lab_std,
+                                    train_set_agegender_mean=train_set_agegender_mean,
+                                    train_set_agegender_std=train_set_agegender_std,
+                                    train_set_vitalsign_mean=train_set_vitalsign_mean,
+                                    train_set_vitalsign_std=train_set_vitalsign_std,
+                                    io_24_mean=io_24_mean,
+                                    io_24_std=io_24_std,
+                                    structurals_idx=structurals_idx,
+                                    dsidx=None)
+
+ds_valid = dataloader.mimic_Dataset(set_hadmid=val_set_hadmid,
+                                    icustays_select=icustays_select_sort_dropduplicate,
+                                    agegender=agegender,
+                                    vital_signs=vital_signs,
+                                    hadmid_first_lab=hadmid_first_lab,
+                                    diagnoses_icd_merge_dropna=diagnoses_icd_merge_dropna,
+                                    tokanizer=BERT_tokenizer,
+                                    train_set_lab_mean=train_set_lab_mean,
+                                    train_set_lab_std=train_set_lab_std,
+                                    train_set_agegender_mean=train_set_agegender_mean,
+                                    train_set_agegender_std=train_set_agegender_std,
+                                    train_set_vitalsign_mean=train_set_vitalsign_mean,
+                                    train_set_vitalsign_std=train_set_vitalsign_std,
+                                    io_24_mean=io_24_mean,
+                                    io_24_std=io_24_std,
+                                    structurals_idx=structurals_idx,
+                                    dsidx=None)
+
+ds_test  = dataloader.mimic_Dataset(set_hadmid=test_set_hadmid,
+                                    icustays_select=icustays_select_sort_dropduplicate,
+                                    agegender=agegender,
+                                    vital_signs=vital_signs,
+                                    hadmid_first_lab=hadmid_first_lab,
+                                    diagnoses_icd_merge_dropna=diagnoses_icd_merge_dropna,
+                                    tokanizer=BERT_tokenizer,
+                                    train_set_lab_mean=train_set_lab_mean,
+                                    train_set_lab_std=train_set_lab_std,
+                                    train_set_agegender_mean=train_set_agegender_mean,
+                                    train_set_agegender_std=train_set_agegender_std,
+                                    train_set_vitalsign_mean=train_set_vitalsign_mean,
+                                    train_set_vitalsign_std=train_set_vitalsign_std,
+                                    io_24_mean=io_24_mean,
+                                    io_24_std=io_24_std,
+                                    structurals_idx=structurals_idx,
+                                    dsidx=None)
     
 def train_NHAMCS(EDisease_Model,
                  stc2emb,
@@ -302,13 +364,7 @@ def train_NHAMCS(EDisease_Model,
 '  =======================================================================================================  '   
             
 if task=='nhamcs_train':
-    model_name = "bert-base-multilingual-cased"
-    T_config = EDiseaseConfig()
-    S_config = StructrualConfig()
-    
-    baseBERT = ED_model.adjBERTmodel(bert_ver=model_name,T_config=T_config,fixBERT=True)
-    
-    BERT_tokenizer = AutoTokenizer.from_pretrained(model_name)
+
     
     EDisease_Model = ED_model.EDisease_Model(T_config=T_config,
                                              S_config=S_config

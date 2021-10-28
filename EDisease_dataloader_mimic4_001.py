@@ -100,6 +100,7 @@ class mimic_Dataset(Dataset):
         icd_n = len(diagnoses_icd)
                 
         hx_token_ids = []
+        hx_token_ids.append(torch.tensor([101,0,0,0,0],dtype=torch.float32))
         
         for i in range(icd_n):
             h = diagnoses_icd.iloc[i]['long_title']
