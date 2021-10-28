@@ -311,7 +311,7 @@ db_file_path = '../datahouse/mimic-iv-0.4'
 # # =====================================================
 # # step 3c: extract vital sign from chartevents
 
-# filepath = os.path.join(db_file_path, 'data_EDis', 'chartevents_vitalsisn_01.pdpkl')
+# filepath = os.path.join(db_file_path, 'data_EDis', 'chartevents_vitalsisn_clean.pdpkl')
 # chartevents_vs_dpna = pd.read_pickle(filepath)
 
 # filepath = os.path.join(db_file_path, 'data_EDis', 'select_temp0.pdpkl')
@@ -687,63 +687,91 @@ db_file_path = '../datahouse/mimic-iv-0.4'
 # # =====================================================
 # # step 5B: Extract labdata/ combine b_lab_sel_check elements with addition bb_idx column by manual cluster
 
-filepath = os.path.join(db_file_path, 'data_EDis', 'b_lab_select.csv')
-b_lab_select = pd.read_csv(filepath)
-b_lab_select = b_lab_select[['itemid','bb_idx']]
+# filepath = os.path.join(db_file_path, 'data_EDis', 'b_lab_select.csv')
+# b_lab_select = pd.read_csv(filepath)
+# b_lab_select = b_lab_select[['itemid','bb_idx']]
 
-column_temp = b_lab_select['bb_idx']
-column_temp = column_temp.drop_duplicates()
-column_lab = list(column_temp.values)
+# column_temp = b_lab_select['bb_idx']
+# column_temp = column_temp.drop_duplicates()
+# column_lab = list(column_temp.values)
 
-filepath = os.path.join(db_file_path, 'data_EDis', 'labevents_merge_dropna_clean.pdpkl')
-labevents_merge_dropna_clean = pd.read_pickle(filepath)
+# filepath = os.path.join(db_file_path, 'data_EDis', 'labevents_merge_dropna_clean.pdpkl')
+# labevents_merge_dropna_clean = pd.read_pickle(filepath)
 
-labevents_merge_dropna_clean_combine = labevents_merge_dropna_clean.merge(b_lab_select,how='left',on=['itemid'])
-labevents_merge_dropna_clean_combine.loc[:,['charttime']] = pd.to_datetime(labevents_merge_dropna_clean_combine['charttime'])
+# labevents_merge_dropna_clean_combine = labevents_merge_dropna_clean.merge(b_lab_select,how='left',on=['itemid'])
+# labevents_merge_dropna_clean_combine.loc[:,['charttime']] = pd.to_datetime(labevents_merge_dropna_clean_combine['charttime'])
+
+# filepath = os.path.join(db_file_path, 'data_EDis', 'select_temp0.pdpkl')
+# icustays_select = pd.read_pickle(filepath)
+
+# labs_ = []
+# length = len(icustays_select)
+# # merge the IO events
+# for i in tqdm.tqdm(range(length)):
+#     sample = icustays_select.iloc[i]
+    
+#     subject_id = sample['subject_id']
+#     hadm_id = sample['hadm_id']
+#     stay_id = sample['stay_id']
+#     intime = sample['intime']
+    
+#     temp = labevents_merge_dropna_clean_combine[labevents_merge_dropna_clean_combine['hadm_id']==hadm_id]
+#     temp = temp.sort_values(by=['charttime'])
+#     temp_first = temp.drop_duplicates(keep='first',subset=['bb_idx'])
+      
+#     temp_first_filter_24 = (temp_first['charttime'] - intime) < datetime.timedelta(minutes=1440)
+#     temp_first = temp_first[temp_first_filter_24]
+    
+#     temp_first_select = temp_first[['bb_idx','valuenum']]
+    
+#     temp_vital_sign = pd.DataFrame(column_lab,index=column_lab,columns=['bb_idx'])
+    
+#     temp_vital_sign = temp_vital_sign.merge(temp_first_select,how='left',on=['bb_idx'])
+#     temp_vital_sign.loc[:,'valuenum'] = pd.to_numeric(temp_vital_sign.loc[:,'valuenum'])
+#     temp_vital_sign = temp_vital_sign.T
+    
+#     temp_vital_sign.columns = column_lab
+    
+#     temp_vital_sign = pd.to_numeric(temp_vital_sign.loc['valuenum'])
+
+#     temp_vital_sign.name = hadm_id
+    
+#     labs_.append(temp_vital_sign)
+
+# labs = pd.concat(labs_,axis=1)
+# labs = labs.T
+# labs = labs.reset_index()
+# labs = labs.drop_duplicates(subset=['index'])
+# labs = labs.set_index('index')
+
+# filepath = os.path.join(db_file_path, 'data_EDis', 'hadmid_first_lab.pdpkl')
+# labs.to_pickle(filepath)
+
+# # =====================================================
+# # step 6: Add ICD diagnosis
 
 filepath = os.path.join(db_file_path, 'data_EDis', 'select_temp0.pdpkl')
 icustays_select = pd.read_pickle(filepath)
 
-labs_ = []
-length = len(icustays_select)
-# merge the IO events
-for i in tqdm.tqdm(range(length)):
-    sample = icustays_select.iloc[i]
-    
-    subject_id = sample['subject_id']
-    hadm_id = sample['hadm_id']
-    stay_id = sample['stay_id']
-    intime = sample['intime']
-    
-    temp = labevents_merge_dropna_clean_combine[labevents_merge_dropna_clean_combine['hadm_id']==hadm_id]
-    temp = temp.sort_values(by=['charttime'])
-    temp_first = temp.drop_duplicates(keep='first',subset=['bb_idx'])
-      
-    temp_first_filter_24 = (temp_first['charttime'] - intime) < datetime.timedelta(minutes=1440)
-    temp_first = temp_first[temp_first_filter_24]
-    
-    temp_first_select = temp_first[['bb_idx','valuenum']]
-    
-    temp_vital_sign = pd.DataFrame(column_lab,index=column_lab,columns=['bb_idx'])
-    
-    temp_vital_sign = temp_vital_sign.merge(temp_first_select,how='left',on=['bb_idx'])
-    temp_vital_sign.loc[:,'valuenum'] = pd.to_numeric(temp_vital_sign.loc[:,'valuenum'])
-    temp_vital_sign = temp_vital_sign.T
-    
-    temp_vital_sign.columns = column_lab
-    
-    temp_vital_sign = temp_vital_sign.loc['valuenum']
+filepath = os.path.join(db_file_path, 'data_EDis', 'agegender.pdpkl')
+agegender = pd.read_pickle(filepath)
 
-
-    temp_vital_sign.name = hadm_id
-    
-    labs_.append(temp_vital_sign)
-
-labs = pd.concat(labs_,axis=1)
-labs = labs.T
-labs = labs.reset_index()
-labs = labs.drop_duplicates(subset=['index'])
-labs = labs.set_index('index')
+filepath = os.path.join(db_file_path, 'data_EDis', 'stayid_first_vitalsign.pdpkl')
+vital_signs = pd.read_pickle(filepath)
 
 filepath = os.path.join(db_file_path, 'data_EDis', 'hadmid_first_lab.pdpkl')
-labs.to_pickle(filepath)
+hadmid_first_lab = pd.read_pickle(filepath)
+
+# filepath = os.path.join(db_file_path, 'data_EDis', 'labevents_merge_dropna_clean.pdpkl')
+# labevents_merge_dropna_clean = pd.read_pickle(filepath)
+
+# filepath = os.path.join(db_file_path, 'data_EDis', 'chartevents_vitalsisn_clean.pdpkl')
+# chartevents_vs_dpna = pd.read_pickle(filepath)
+
+filepath = os.path.join(db_file_path, 'hosp', 'diagnoses_icd.csv')
+diagnoses_icd = pd.read_csv(filepath)
+
+filepath = os.path.join(db_file_path, 'hosp', 'd_icd_diagnoses.csv')
+d_icd_diagnoses = pd.read_csv(filepath)
+
+
