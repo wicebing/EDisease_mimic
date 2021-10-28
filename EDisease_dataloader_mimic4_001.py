@@ -17,18 +17,31 @@ BERT_tokenizer = BertTokenizer.from_pretrained("bert-base-multilingual-cased")
 # ====================
 
 class mimic_Dataset(Dataset):
-    def __init__(self, 
-                 ds,
+    def __init__(self,
+                 set_hadmid,
+                 icustays_select,
+                 agegender,
+                 vital_signs,
+                 hadmid_first_lab,
+                 diagnoses_icd_merge_dropna,
                  tokanizer,
-                 normalization,
+                 train_set_lab_mean,
+                 train_set_lab_std,
                  dsidx=None):
-        self.ds = ds
+       
+        self.set_hadmid = set_hadmid
+        self.icustays_select = icustays_select
+        self.agegender = agegender
+        self.vital_signs = vital_signs
+        self.hadmid_first_lab = hadmid_first_lab
+        self.diagnoses_icd_merge_dropna = diagnoses_icd_merge_dropna
         self.tokanizer = tokanizer
-        self.normalization = normalization
+        self.train_set_lab_mean = train_set_lab_mean
+        self.train_set_lab_std = train_set_lab_std
         self.dsidx = dsidx
         
         if dsidx is None:
-            self.len = len(ds)
+            self.len = len(set_hadmid)
         else:
             self.len = len(dsidx)
     

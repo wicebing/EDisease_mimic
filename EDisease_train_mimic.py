@@ -40,6 +40,56 @@ if not os.path.isdir(checkpoint_file):
     os.makedirs(checkpoint_file)
     print(f' make dir {checkpoint_file}')
     
+
+db_file_path = '../datahouse/mimic-iv-0.4'
+
+filepath = os.path.join(db_file_path, 'data_EDis', 'select_temp0.pdpkl')
+icustays_select = pd.read_pickle(filepath)
+
+filepath = os.path.join(db_file_path, 'data_EDis', 'agegender.pdpkl')
+agegender = pd.read_pickle(filepath)
+
+filepath = os.path.join(db_file_path, 'data_EDis', 'stayid_first_vitalsign.pdpkl')
+vital_signs = pd.read_pickle(filepath)
+
+filepath = os.path.join(db_file_path, 'data_EDis', 'hadmid_first_lab.pdpkl')
+hadmid_first_lab = pd.read_pickle(filepath)
+
+filepath = os.path.join(db_file_path, 'data_EDis', 'diagnoses_icd_merge_dropna.pdpkl')
+diagnoses_icd_merge_dropna = pd.read_pickle(filepath)
+
+train_set_hadmid = hadmid_first_lab.sample(frac=0.85,random_state=0).index
+temp_set_hadmid = hadmid_first_lab.drop(train_set_hadmid)
+val_set_hadmid = temp_set_hadmid.sample(frac=0.25,random_state=0).index
+test_set_hadmid = temp_set_hadmid.drop(val_set_hadmid).index
+
+train_set_lab_mean = hadmid_first_lab.loc[train_set_hadmid].mean()
+train_set_lab_std = hadmid_first_lab.loc[train_set_hadmid].std()
+
+trainset_temp = pd.DataFrame(train_set_hadmid)
+trainset_temp.columns = ['hadm_id']
+trainset_temp = trainset_temp.merge(icustays_select,how='left',on=['hadm_id'])
+
+trainset_subjectid = trainset_temp[['subject_id']].drop_duplicates()
+agegender_keys = agegender.keys()
+agegender_ridx = agegender.reset_index()
+agegender_ridx.columns = ['subject_id',*agegender_keys]
+trainset_agegender_temp =  trainset_subjectid.merge(agegender_ridx,how='left',on=['subject_id'])
+trainset_agegender_temp = trainset_agegender_temp.set_index('subject_id')
+
+train_set_agegender_mean = trainset_agegender_temp.mean()
+train_set_agegender_std = trainset_agegender_temp.std()
+
+trainset_stayid = trainset_temp[['stay_id']].drop_duplicates()
+vital_signs_keys = vital_signs.keys()
+vital_signs_ridx = vital_signs.reset_index()
+vital_signs_ridx.columns= ['stay_id',*vital_signs_keys]
+trainset_vitalsign_temp = trainset_stayid.merge(vital_signs_ridx,how='left',on=['stay_id'])
+trainset_vitalsign_temp = trainset_vitalsign_temp.set_index('stay_id')
+
+train_set_vitalsign_mean = trainset_vitalsign_temp.mean()
+train_set_vitalsign_std = trainset_vitalsign_temp.std()
+    
 def train_NHAMCS(EDisease_Model,
                  stc2emb,
                  emb_emb,
