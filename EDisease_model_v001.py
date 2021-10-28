@@ -107,7 +107,7 @@ class structure_emb_old(nn.Module):
 
     def forward(self, inputs,attention_mask=None,position_ids=None,token_type_ids=None):
         pooled_output = self.stc2emb(inputs)
-        return pooled_output
+        return pooled_output.unsqueeze(1)
 
 class emb_emb(nn.Module):
     def __init__(self, config):

@@ -29,7 +29,7 @@ except:
     task = 'test_nhamcs_cls'
 
 batch_size = 128
-device = 'cuda'
+
 parallel = False
 
 alpha=1
@@ -201,6 +201,7 @@ def train_mimics(EDisease_Model,
                  dloader,
                  dloader_v,
                  checkpoint_file,
+                 device,
                  lr=1e-4,
                  epoch=100,
                  log_interval=10,
@@ -510,6 +511,7 @@ def testt_mimics(EDisease_Model,
                  dim_model,
                  baseBERT,
                  dloader,
+                 device,
                  parallel=parallel,
                  gpus=0                     
                  ): 
@@ -625,7 +627,8 @@ def testt_mimics(EDisease_Model,
 '  =======================================================================================================  '   
             
 if task=='train':
-
+    gpus = 0
+    device = f'cuda:{gpus}'
     checkpoint_file = '../checkpoint_EDs/EDisease_spectrum_flat'
     if not os.path.isdir(checkpoint_file):
         os.makedirs(checkpoint_file)
@@ -680,9 +683,12 @@ if task=='train':
                  parallel=parallel,                     
                  checkpoint_file=checkpoint_file,
                  noise=True,
-                 gpus=0) 
+                 gpus=gpus,
+                 device=device) 
     
 if task=='train_old':
+    gpus = 1
+    device = f'cuda:{gpus}'
     checkpoint_file = '../checkpoint_EDs/EDisease_spectrum_flat_oldstr2emb'
     if not os.path.isdir(checkpoint_file):
         os.makedirs(checkpoint_file)
@@ -737,4 +743,5 @@ if task=='train_old':
                  parallel=parallel,                     
                  checkpoint_file=checkpoint_file,
                  noise=True,
-                 gpus=1) 
+                 gpus=gpus,
+                 device=device) 
