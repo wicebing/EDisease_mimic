@@ -48,6 +48,18 @@ S_config = StructrualConfig()
 baseBERT = ED_model.adjBERTmodel(bert_ver=model_name,T_config=T_config,fixBERT=True)
 BERT_tokenizer = AutoTokenizer.from_pretrained(model_name)
 
+try: 
+    baseBERT = load_checkpoint('../modelhouse','BERT_ml_pretrain4.pth',baseBERT)
+    print(' ** Complete Load baseBERT Model ** ')
+except:
+    print('*** No Pretrain_baseBERT_Model ***')
+
+for param in baseBERT.parameters():
+    param.requires_grad = False   
+print(' ** pretrained BERT WEIGHT ** ')
+print('baseBERT PARAMETERS: ' ,count_parameters(baseBERT))
+
+
 # load data
 db_file_path = '../datahouse/mimic-iv-0.4'
 
@@ -216,6 +228,8 @@ def train_mimics(EDisease_Model,
     model_optimizer_e2e = optim.Adam(emb_emb.parameters(), lr=lr)
     model_optimizer_dim = optim.Adam(dim_model.parameters(), lr=lr)
     
+    criterion_em = nn.CrossEntropyLoss().to(device)
+    
     if parallel:
         EDisease_Model = torch.nn.DataParallel(EDisease_Model)
         stc2emb = torch.nn.DataParallel(stc2emb)
@@ -332,6 +346,7 @@ def train_mimics(EDisease_Model,
                                   mask_ratio=mask_ratio
                                   )
             EDisease = outp['EDisease']
+            predict = outp['predict']
 
             outp2 = EDisease_Model(things=things_org,
                                    mask_ratio=mask_ratio
@@ -341,7 +356,7 @@ def train_mimics(EDisease_Model,
             EDiseaseFake = torch.cat([EDisease[1:],EDisease[:1]],dim=0)
             
             mode = 'D' if batch_idx%2==0 else 'G'
-            ptloss = True if batch_idx%99==3 else False
+            ptloss = True if batch_idx%299==3 else False
             
             things_e = {'e':{'emb':EDisease.unsqueeze(1),
                              'emb2':EDisease2.unsqueeze(1),
@@ -359,7 +374,13 @@ def train_mimics(EDisease_Model,
                                  ptloss=ptloss,
                                  ep=ep)
             
-            loss = loss_dim
+            trg = sample['trg']
+            
+            trg_bool = (trg >= 7).long()
+            
+            loss_cls = criterion_em(predict,trg_bool)
+            
+            loss = loss_dim+loss_cls
                 
             loss.sum().backward()
             model_optimizer.step()
@@ -370,6 +391,11 @@ def train_mimics(EDisease_Model,
             with torch.no_grad():
                 epoch_loss += loss.item()*bs
                 epoch_cases += bs
+
+            if ptloss:
+                print('  ========================================================== ')
+                print('Loss DIM {:.4f}, Loss CLS :{:.4f}, '.format(loss_dim.item(), loss_cls.item())) 
+                print('  ========================================================== \n')
 
         if ep % 1 ==0:
             save_checkpoint(checkpoint_file=checkpoint_file,
@@ -403,7 +429,7 @@ def train_mimics(EDisease_Model,
 '  =======================================================================================================  '   
 '  =======================================================================================================  '   
             
-if task=='nhamcs_train':
+if task=='train':
 
     
     EDisease_Model = ED_model.EDisease_Model(T_config=T_config,
@@ -417,6 +443,27 @@ if task=='nhamcs_train':
                               alpha=alpha,
                               beta=beta,
                               gamma=gamma)
+    
+    try: 
+        EDisease_Model = load_checkpoint(checkpoint_file,'EDisease_Model.pth',EDisease_Model)
+        print(' ** Complete Load CLS EDisease Model ** ')
+    except:
+        print('*** No Pretrain_EDisease_CLS_Model ***')
+
+    try:     
+        dim_model = load_checkpoint(checkpoint_file,'dim_model.pth',dim_model)
+    except:
+        print('*** No Pretrain_dim_model ***')
+
+    try:     
+        stc2emb = load_checkpoint(checkpoint_file,'stc2emb.pth',stc2emb)
+    except:
+        print('*** No Pretrain_stc2emb ***')
+
+    try:     
+        emb_emb = load_checkpoint(checkpoint_file,'emb_emb.pth',emb_emb)
+    except:
+        print('*** No Pretrain_emb_emb ***')
 
 # ====
     stack_hx_n, em_h_emb = train_mimics(EDisease_Model=EDisease_Model,

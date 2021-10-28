@@ -40,9 +40,9 @@ def load_checkpoint(checkpoint_file,checkpoint_path, model):
                        )
     model.load_state_dict(state['state_dict'])
     print('model loaded from %s / %s' % (checkpoint_file,checkpoint_path))
-    name_='W_'+checkpoint_path
-    torch.save(model,os.path.join(checkpoint_file,name_))
-    print('model saved to %s / %s' % (checkpoint_file,name_))
+    # name_='W_'+checkpoint_path
+    # torch.save(model,os.path.join(checkpoint_file,name_))
+    # print('model saved to %s / %s' % (checkpoint_file,name_))
     return model
 
 def draw_tsne(net_F, baseBERT,target, device):

@@ -120,6 +120,8 @@ class EDisease_Model(nn.Module):
         self.EDisease_Transformer = BertModel(self.Config)
         
         self.EDs_embeddings = nn.Embedding(T_config.vocab_size, T_config.hidden_size)
+        
+        self.classifier = classifier(T_config)
     
     def forward(self,
                 things,
@@ -160,8 +162,11 @@ class EDisease_Model(nn.Module):
         
         EDisease = last_hidden_states[:,0,:]
         
+        predict = self.classifier(EDisease)
+        
         outp ={'output':output,
                'EDisease':EDisease,
+               'predict':predict,
                'input_emb_org':input_emb_org,
                'position_ids':position_ids,
                'attention_mask':attention_mask
