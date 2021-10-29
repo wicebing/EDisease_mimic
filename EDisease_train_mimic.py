@@ -759,7 +759,7 @@ if task=='test':
 
     print(f'auc: {roc_auc:.3f}')
     
-if task=='train_old':
+if task=='train_mlp':
     gpus = 1
     device = f'cuda:{gpus}'
     
@@ -945,3 +945,283 @@ if task=='test_mlp_MICE':
     valres.to_pickle(f'./result_pickles/EDmlpFlat_{roc_auc*1000:.0f}.pkl')
 
     print(f'auc: {roc_auc:.3f}')
+    
+if task=='train_mlp_MICE':
+    name='MICE'
+    filepath = os.path.join(db_file_path, 'data_EDis_imputation', f'stayid_first_vitalsign_{name}.pdpkl')
+    vital_signs_ip = pd.read_pickle(filepath)
+    
+    filepath = os.path.join(db_file_path, 'data_EDis_imputation', f'hadmid_first_lab_{name}.pdpkl')
+    hadmid_first_lab_ip = pd.read_pickle(filepath)
+    
+    ds_train_ip = dataloader.mimic_Dataset(set_hadmid=train_set_hadmid,
+                                        icustays_select=icustays_select_sort_dropduplicate,
+                                        agegender=agegender,
+                                        vital_signs=vital_signs,
+                                        hadmid_first_lab=hadmid_first_lab,
+                                        diagnoses_icd_merge_dropna=diagnoses_icd_merge_dropna,
+                                        tokanizer=BERT_tokenizer,
+                                        train_set_lab_mean=train_set_lab_mean,
+                                        train_set_lab_std=train_set_lab_std,
+                                        train_set_agegender_mean=train_set_agegender_mean,
+                                        train_set_agegender_std=train_set_agegender_std,
+                                        train_set_vitalsign_mean=train_set_vitalsign_mean,
+                                        train_set_vitalsign_std=train_set_vitalsign_std,
+                                        io_24_mean=io_24_mean,
+                                        io_24_std=io_24_std,
+                                        structurals_idx=structurals_idx,
+                                        dsidx=balance_train_set_hadmid)
+    
+    ds_valid_ip = dataloader.mimic_Dataset(set_hadmid=val_set_hadmid,
+                                        icustays_select=icustays_select_sort_dropduplicate,
+                                        agegender=agegender,
+                                        vital_signs=vital_signs,
+                                        hadmid_first_lab=hadmid_first_lab,
+                                        diagnoses_icd_merge_dropna=diagnoses_icd_merge_dropna,
+                                        tokanizer=BERT_tokenizer,
+                                        train_set_lab_mean=train_set_lab_mean,
+                                        train_set_lab_std=train_set_lab_std,
+                                        train_set_agegender_mean=train_set_agegender_mean,
+                                        train_set_agegender_std=train_set_agegender_std,
+                                        train_set_vitalsign_mean=train_set_vitalsign_mean,
+                                        train_set_vitalsign_std=train_set_vitalsign_std,
+                                        io_24_mean=io_24_mean,
+                                        io_24_std=io_24_std,
+                                        structurals_idx=structurals_idx,
+                                        dsidx=None)
+    
+    ds_test_ip  = dataloader.mimic_Dataset(set_hadmid=test_set_hadmid,
+                                        icustays_select=icustays_select_sort_dropduplicate,
+                                        agegender=agegender,
+                                        vital_signs=vital_signs,
+                                        hadmid_first_lab=hadmid_first_lab,
+                                        diagnoses_icd_merge_dropna=diagnoses_icd_merge_dropna,
+                                        tokanizer=BERT_tokenizer,
+                                        train_set_lab_mean=train_set_lab_mean,
+                                        train_set_lab_std=train_set_lab_std,
+                                        train_set_agegender_mean=train_set_agegender_mean,
+                                        train_set_agegender_std=train_set_agegender_std,
+                                        train_set_vitalsign_mean=train_set_vitalsign_mean,
+                                        train_set_vitalsign_std=train_set_vitalsign_std,
+                                        io_24_mean=io_24_mean,
+                                        io_24_std=io_24_std,
+                                        structurals_idx=structurals_idx,
+                                        dsidx=None)
+
+    DL_train_ip = DataLoader(dataset = ds_train_ip,
+                         shuffle = True,
+                         num_workers=4,
+                         batch_size=batch_size,
+                         collate_fn=dataloader.collate_fn)
+    
+    DL_valid_ip = DataLoader(dataset = ds_valid_ip,
+                         shuffle = False,
+                         num_workers=4,
+                         batch_size=batch_size,
+                         collate_fn=dataloader.collate_fn)
+    
+    DL_test_ip = DataLoader(dataset = ds_test_ip,
+                         shuffle = False,
+                         num_workers=4,
+                         batch_size=batch_size,
+                         collate_fn=dataloader.collate_fn)
+    
+    device = f'cuda:{gpus}'
+    mlp = True
+    checkpoint_file = f'../checkpoint_EDs/EDisease_spectrum_flat_oldstr2emb_{name}'
+    if not os.path.isdir(checkpoint_file):
+        os.makedirs(checkpoint_file)
+        print(f' make dir {checkpoint_file}')
+
+    EDisease_Model = ED_model.EDisease_Model(T_config=T_config,
+                                             S_config=S_config
+                                             )
+
+    stc2emb = ED_model.structure_emb_mlp(S_config)
+    emb_emb = ED_model.emb_emb(T_config)
+
+    dim_model = ED_model.DIM(T_config=T_config,
+                              alpha=alpha,
+                              beta=beta,
+                              gamma=gamma)
+    
+    try: 
+        EDisease_Model = load_checkpoint(checkpoint_file,'EDisease_Model_best.pth',EDisease_Model)
+        print(' ** Complete Load CLS EDisease Model ** ')
+    except:
+        print('*** No Pretrain_EDisease_CLS_Model ***')
+
+    try:     
+        dim_model = load_checkpoint(checkpoint_file,'dim_model_best.pth',dim_model)
+    except:
+        print('*** No Pretrain_dim_model ***')
+
+    try:     
+        stc2emb = load_checkpoint(checkpoint_file,'stc2emb_best.pth',stc2emb)
+    except:
+        print('*** No Pretrain_stc2emb ***')
+
+    try:     
+        emb_emb = load_checkpoint(checkpoint_file,'emb_emb_best.pth',emb_emb)
+    except:
+        print('*** No Pretrain_emb_emb ***')
+
+# ====
+    train_mimics(EDisease_Model=EDisease_Model,
+                 stc2emb=stc2emb,
+                 emb_emb=emb_emb,
+                 dim_model=dim_model,
+                 baseBERT=baseBERT,
+                 dloader=DL_train_ip,
+                 dloader_v=DL_valid_ip, 
+                 lr=1e-5,
+                 epoch=200,
+                 log_interval=10,
+                 noise_scale=0.002,
+                 mask_ratio=0.33,
+                 parallel=parallel,                     
+                 checkpoint_file=checkpoint_file,
+                 noise=True,
+                 gpus=gpus,
+                 device=device,
+                 mlp=mlp)
+    
+if task=='train_mlp_KNN':
+    name='KNN'
+    filepath = os.path.join(db_file_path, 'data_EDis_imputation', f'stayid_first_vitalsign_{name}.pdpkl')
+    vital_signs_ip = pd.read_pickle(filepath)
+    
+    filepath = os.path.join(db_file_path, 'data_EDis_imputation', f'hadmid_first_lab_{name}.pdpkl')
+    hadmid_first_lab_ip = pd.read_pickle(filepath)
+    
+    ds_train_ip = dataloader.mimic_Dataset(set_hadmid=train_set_hadmid,
+                                        icustays_select=icustays_select_sort_dropduplicate,
+                                        agegender=agegender,
+                                        vital_signs=vital_signs,
+                                        hadmid_first_lab=hadmid_first_lab,
+                                        diagnoses_icd_merge_dropna=diagnoses_icd_merge_dropna,
+                                        tokanizer=BERT_tokenizer,
+                                        train_set_lab_mean=train_set_lab_mean,
+                                        train_set_lab_std=train_set_lab_std,
+                                        train_set_agegender_mean=train_set_agegender_mean,
+                                        train_set_agegender_std=train_set_agegender_std,
+                                        train_set_vitalsign_mean=train_set_vitalsign_mean,
+                                        train_set_vitalsign_std=train_set_vitalsign_std,
+                                        io_24_mean=io_24_mean,
+                                        io_24_std=io_24_std,
+                                        structurals_idx=structurals_idx,
+                                        dsidx=balance_train_set_hadmid)
+    
+    ds_valid_ip = dataloader.mimic_Dataset(set_hadmid=val_set_hadmid,
+                                        icustays_select=icustays_select_sort_dropduplicate,
+                                        agegender=agegender,
+                                        vital_signs=vital_signs,
+                                        hadmid_first_lab=hadmid_first_lab,
+                                        diagnoses_icd_merge_dropna=diagnoses_icd_merge_dropna,
+                                        tokanizer=BERT_tokenizer,
+                                        train_set_lab_mean=train_set_lab_mean,
+                                        train_set_lab_std=train_set_lab_std,
+                                        train_set_agegender_mean=train_set_agegender_mean,
+                                        train_set_agegender_std=train_set_agegender_std,
+                                        train_set_vitalsign_mean=train_set_vitalsign_mean,
+                                        train_set_vitalsign_std=train_set_vitalsign_std,
+                                        io_24_mean=io_24_mean,
+                                        io_24_std=io_24_std,
+                                        structurals_idx=structurals_idx,
+                                        dsidx=None)
+    
+    ds_test_ip  = dataloader.mimic_Dataset(set_hadmid=test_set_hadmid,
+                                        icustays_select=icustays_select_sort_dropduplicate,
+                                        agegender=agegender,
+                                        vital_signs=vital_signs,
+                                        hadmid_first_lab=hadmid_first_lab,
+                                        diagnoses_icd_merge_dropna=diagnoses_icd_merge_dropna,
+                                        tokanizer=BERT_tokenizer,
+                                        train_set_lab_mean=train_set_lab_mean,
+                                        train_set_lab_std=train_set_lab_std,
+                                        train_set_agegender_mean=train_set_agegender_mean,
+                                        train_set_agegender_std=train_set_agegender_std,
+                                        train_set_vitalsign_mean=train_set_vitalsign_mean,
+                                        train_set_vitalsign_std=train_set_vitalsign_std,
+                                        io_24_mean=io_24_mean,
+                                        io_24_std=io_24_std,
+                                        structurals_idx=structurals_idx,
+                                        dsidx=None)
+
+    DL_train_ip = DataLoader(dataset = ds_train_ip,
+                         shuffle = True,
+                         num_workers=4,
+                         batch_size=batch_size,
+                         collate_fn=dataloader.collate_fn)
+    
+    DL_valid_ip = DataLoader(dataset = ds_valid_ip,
+                         shuffle = False,
+                         num_workers=4,
+                         batch_size=batch_size,
+                         collate_fn=dataloader.collate_fn)
+    
+    DL_test_ip = DataLoader(dataset = ds_test_ip,
+                         shuffle = False,
+                         num_workers=4,
+                         batch_size=batch_size,
+                         collate_fn=dataloader.collate_fn)
+    
+    device = f'cuda:{gpus}'
+    mlp = True
+    checkpoint_file = f'../checkpoint_EDs/EDisease_spectrum_flat_oldstr2emb_{name}'
+    if not os.path.isdir(checkpoint_file):
+        os.makedirs(checkpoint_file)
+        print(f' make dir {checkpoint_file}')
+
+    EDisease_Model = ED_model.EDisease_Model(T_config=T_config,
+                                             S_config=S_config
+                                             )
+
+    stc2emb = ED_model.structure_emb_mlp(S_config)
+    emb_emb = ED_model.emb_emb(T_config)
+
+    dim_model = ED_model.DIM(T_config=T_config,
+                              alpha=alpha,
+                              beta=beta,
+                              gamma=gamma)
+    
+    try: 
+        EDisease_Model = load_checkpoint(checkpoint_file,'EDisease_Model_best.pth',EDisease_Model)
+        print(' ** Complete Load CLS EDisease Model ** ')
+    except:
+        print('*** No Pretrain_EDisease_CLS_Model ***')
+
+    try:     
+        dim_model = load_checkpoint(checkpoint_file,'dim_model_best.pth',dim_model)
+    except:
+        print('*** No Pretrain_dim_model ***')
+
+    try:     
+        stc2emb = load_checkpoint(checkpoint_file,'stc2emb_best.pth',stc2emb)
+    except:
+        print('*** No Pretrain_stc2emb ***')
+
+    try:     
+        emb_emb = load_checkpoint(checkpoint_file,'emb_emb_best.pth',emb_emb)
+    except:
+        print('*** No Pretrain_emb_emb ***')
+
+# ====
+    train_mimics(EDisease_Model=EDisease_Model,
+                 stc2emb=stc2emb,
+                 emb_emb=emb_emb,
+                 dim_model=dim_model,
+                 baseBERT=baseBERT,
+                 dloader=DL_train_ip,
+                 dloader_v=DL_valid_ip, 
+                 lr=1e-5,
+                 epoch=200,
+                 log_interval=10,
+                 noise_scale=0.002,
+                 mask_ratio=0.33,
+                 parallel=parallel,                     
+                 checkpoint_file=checkpoint_file,
+                 noise=True,
+                 gpus=gpus,
+                 device=device,
+                 mlp=mlp) 
