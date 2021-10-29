@@ -39,5 +39,20 @@ hadmid_first_lab.isna().sum(axis=0).to_csv('./isna_hadmid_first_lab.csv')
 np_vital_signs = vital_signs.values
 np_hadmid_first_lab = hadmid_first_lab.values
 
+name = 'MICE'
+print(f'{name}_np_vital_signs')
 MICE_np_vital_signs = MICE().complete(np_vital_signs)
+MICE_vital_signs = vital_signs.copy()
+MICE_vital_signs.loc[:]=MICE_np_vital_signs
+
+filepath = os.path.join(db_file_path, 'data_EDis_imputation', f'stayid_first_vitalsign_{name}.pdpkl')
+MICE_vital_signs.to_pickle(filepath)
+
+print(f'{name}_np_hadmid_first_lab')
 MICE_np_hadmid_first_lab = MICE().complete(np_hadmid_first_lab)
+MICE_hadmid_first_lab = hadmid_first_lab.copy()
+MICE_hadmid_first_lab.loc[:]=MICE_np_hadmid_first_lab
+
+filepath = os.path.join(db_file_path, 'data_EDis_imputation', f'hadmid_first_lab_{name}.pdpkl')
+MICE_hadmid_first_lab.to_pickle(filepath)
+
