@@ -27,6 +27,12 @@ try:
     print('*****task= ',task)
 except:
     task = 'test_nhamcs_cls'
+    
+try:
+    gpus = int(sys.argv[2])
+    print('*****gpus = ', gpus)
+except:
+    gpus = 0
 
 batch_size = 128
 
@@ -816,7 +822,69 @@ if task=='train_old':
                  device=device,
                  mlp=mlp) 
 
-if task=='test_old':
+if task=='test_mlp':
+    gpus = 1
+    device = f'cuda:{gpus}'
+    
+    mlp = True
+    checkpoint_file = '../checkpoint_EDs/EDisease_spectrum_flat_oldstr2emb'
+    if not os.path.isdir(checkpoint_file):
+        os.makedirs(checkpoint_file)
+        print(f' make dir {checkpoint_file}')
+
+    EDisease_Model = ED_model.EDisease_Model(T_config=T_config,
+                                             S_config=S_config
+                                             )
+
+    stc2emb = ED_model.structure_emb_mlp(S_config)
+    emb_emb = ED_model.emb_emb(T_config)
+
+    dim_model = ED_model.DIM(T_config=T_config,
+                              alpha=alpha,
+                              beta=beta,
+                              gamma=gamma)
+    
+    try: 
+        EDisease_Model = load_checkpoint(checkpoint_file,'EDisease_Model_best.pth',EDisease_Model)
+        print(' ** Complete Load CLS EDisease Model ** ')
+    except:
+        print('*** No Pretrain_EDisease_CLS_Model ***')
+
+    try:     
+        dim_model = load_checkpoint(checkpoint_file,'dim_model_best.pth',dim_model)
+    except:
+        print('*** No Pretrain_dim_model ***')
+
+    try:     
+        stc2emb = load_checkpoint(checkpoint_file,'stc2emb_best.pth',stc2emb)
+    except:
+        print('*** No Pretrain_stc2emb ***')
+
+    try:     
+        emb_emb = load_checkpoint(checkpoint_file,'emb_emb_best.pth',emb_emb)
+    except:
+        print('*** No Pretrain_emb_emb ***')
+
+# ====
+    valres= testt_mimics(EDisease_Model,
+                         stc2emb,
+                         emb_emb,
+                         dim_model,
+                         baseBERT,
+                         DL_test,
+                         parallel=False,
+                         gpus=gpus,
+                         device=device)               
+
+    fpr, tpr, _ = roc_curve(valres['ground_truth'].values, valres['probability'].values)
+    
+    roc_auc = auc(fpr,tpr)
+    
+    valres.to_pickle(f'./result_pickles/EDmlpFlat_{roc_auc*1000:.0f}.pkl')
+
+    print(f'auc: {roc_auc:.3f}')
+    
+if task=='test_mlp_MICE':
     gpus = 1
     device = f'cuda:{gpus}'
     
