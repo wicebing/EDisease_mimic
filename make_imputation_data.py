@@ -18,6 +18,7 @@ from ycimpute.imputer.mice import MICE
 from ycimpute.imputer.knnimput import KNN
 from ycimpute.imputer.mida import MIDA
 from ycimpute.imputer.gain import GAIN
+from ycimpute.imputer import EM
 
 # load data
 db_file_path = '../datahouse/mimic-iv-0.4'
@@ -34,3 +35,9 @@ hadmid_first_lab = pd.read_pickle(filepath)
 agegender.isna().sum(axis=0).to_csv('./isna_agegender.csv')
 vital_signs.isna().sum(axis=0).to_csv('./isna_vital_signs.csv')
 hadmid_first_lab.isna().sum(axis=0).to_csv('./isna_hadmid_first_lab.csv')
+
+np_vital_signs = vital_signs.values
+np_hadmid_first_lab = hadmid_first_lab.values
+
+MICE_np_vital_signs = MICE().complete(np_vital_signs)
+MICE_np_hadmid_first_lab = MICE().complete(np_hadmid_first_lab)
