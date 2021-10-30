@@ -66,9 +66,9 @@ trainset_hadmid = trainset_hadmid_.set_index('hadm_id').index
 #============================================================
 #============================================================
 ip_method = {0:{'ip_name':'KNN','ip_model_vs': KNN(k=4),'ip_model_lab':KNN(k=4)},
-             1:{'ip_name':'MICE','ip_model_vs': MICE(),'ip_model_lab':MICE()},
              2:{'ip_name':'EM','ip_model_vs': EM(),'ip_model_lab':EM()},
              3:{'ip_name':'GAIN','ip_model_vs': GAIN(),'ip_model_lab':GAIN()},
+             1:{'ip_name':'MICE','ip_model_vs': MICE(),'ip_model_lab':MICE()},
              4:{'ip_name':'MIDA','ip_model_vs': MIDA(),'ip_model_lab':MIDA()}
              }
 
@@ -121,7 +121,7 @@ for i, e in ip_method.items():
         IP_hadmid_first_lab.loc[:,select_lab_keys] = IP_np_hadmid_lab_all
     
         print(' replace the train set without future look valtest')
-        IP_hadmid_first_lab.loc[trainset_hadmid] = IP_np_hadmid_lab_train
+        IP_hadmid_first_lab.loc[trainset_hadmid,select_lab_keys] = IP_np_hadmid_lab_train
         
         filepath = os.path.join(db_file_path, 'data_EDis_imputation', f'hadmid_first_lab_{name}.pdpkl')
         IP_hadmid_first_lab.to_pickle(filepath)
@@ -148,7 +148,7 @@ for i, e in ip_method.items():
             IP_hadmid_first_lab.loc[:,select_lab_keys] = IP_np_hadmid_lab_all
         
             print(' replace the train set without future look valtest')
-            IP_hadmid_first_lab.loc[trainset_hadmid] = IP_np_hadmid_lab_train
+            IP_hadmid_first_lab.loc[trainset_hadmid,select_lab_keys] = IP_np_hadmid_lab_train
             
             filepath = os.path.join(db_file_path, 'data_EDis_imputation', f'hadmid_first_lab_{name}.pdpkl')
             IP_hadmid_first_lab.to_pickle(filepath)     
