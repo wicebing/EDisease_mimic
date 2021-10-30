@@ -13,12 +13,16 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import DataLoader, Dataset
 from sklearn.metrics import roc_curve, auc, accuracy_score
+from pandas import isnull
 
 from ycimpute.imputer.mice import MICE
 from ycimpute.imputer.knnimput import KNN
 from ycimpute.imputer.mida import MIDA
 from ycimpute.imputer.gain import GAIN
 from ycimpute.imputer import EM
+
+from ycimpute.utils.normalizer import NORMALIZERS,RECOVER
+
 
 # load data
 db_file_path = '../datahouse/mimic-iv-0.4'
@@ -52,29 +56,106 @@ trainset_temp = pd.DataFrame(train_set_hadmid)
 trainset_temp.columns = ['hadm_id']
 trainset_temp = trainset_temp.merge(icustays_select,how='left',on=['hadm_id'])
 
-trainset_stayid = trainset_temp[['stay_id']].drop_duplicates()
-trainset_stayid = trainset_stayid.set_index('stay_id').index
-trainset_hadmid = trainset_temp[['hadm_id']].drop_duplicates()
-trainset_hadmid = trainset_hadmid.set_index('hadm_id').index
+trainset_stayid_ = trainset_temp[['stay_id']].drop_duplicates()
+trainset_hadmid_ = trainset_temp[['hadm_id']].drop_duplicates()
 
-valtesat_stayid = vital_signs.drop(trainset_stayid).index
-valtesat_hadmid = hadmid_first_lab.drop(trainset_hadmid).index
+trainset_stayid = trainset_stayid_.set_index('stay_id').index
+trainset_hadmid = trainset_hadmid_.set_index('hadm_id').index
 
-# select_lab_keys = ['BE', 'Cl', 'Ca', 'Glucose', 'Hb', 'Lac', 'PH', 'Na', 'ALT', 'ALB',
-#         'ALP', 'AMY', 'AST', 'BIL-D', 'BIL-T', 'CK', 'Crea',
-#         'Lipase', 'Mg', 'P', 'K', 'FreeT4', 'TnT', 'BUN', 'Band',
-#         'Eosin', 'Hct', 'PTINR', 'Lym', 'MCH', 'MCHC', 'MCV', 'Myelo',
-#         'Seg', 'PLT', 'PTT', 'WBC', 'UrineRBC', 'UrineWBC']
+#============================================================
+#============================================================
+#============================================================
+ip_method = {0:{'ip_name':'KNN','ip_model_vs': KNN(k=4),'ip_model_lab':KNN(k=4)},
+             1:{'ip_name':'MICE','ip_model_vs': MICE(),'ip_model_lab':MICE()},
+             2:{'ip_name':'EM','ip_model_vs': EM(),'ip_model_lab':EM()},
+             3:{'ip_name':'GAIN','ip_model_vs': GAIN(),'ip_model_lab':GAIN()},
+             4:{'ip_name':'MIDA','ip_model_vs': MIDA(),'ip_model_lab':MIDA()}
+             }
 
-np_vital_signs = vital_signs.values
 
-select_lab_keys = ['BE', 'Cl', 'Ca', 'Glucose', 'Hb', 'Lac', 'PH', 'Na', 'ALT', 'ALB',
-       'ALP', 'NH3', 'AMY', 'AST', 'BIL-D', 'BIL-T', 'CK', 'Crea', 'Ddimer',
-       'GGT', 'Lipase', 'Mg', 'P', 'K', 'FreeT4', 'TnT', 'BUN', 'Band',
-       'Blast', 'Eosin', 'Hct', 'PTINR', 'Lym', 'MCH', 'MCHC', 'MCV', 'Myelo',
-       'Seg', 'PLT', 'PTT', 'WBC', 'UrineRBC', 'UrineWBC']
+for i, e in ip_method.items():
+    name = e['ip_name']
+    ip_vs = e['ip_model_vs']
+    ip_lab = e['ip_model_lab']
 
-np_hadmid_first_lab = hadmid_first_lab[select_lab_keys].values
+    #============================================================
+    np_train_vital_signs = vital_signs.loc[trainset_stayid].values
+    np_all_vital_signs = vital_signs.values
+    
+    #============================================================
+           
+    print(f'{name}_np_vital_signs')
+    print(' ip the training set')
+    IP_np_vital_signs_train = ip_vs.complete(np_train_vital_signs)
+    
+    print(' inference valtest set')
+    IP_np_vital_signs = ip_vs.complete(np_all_vital_signs)
+    IP_vital_signs = vital_signs.copy()
+    IP_vital_signs.loc[:]= IP_np_vital_signs
+    
+    print(' replace the train set without future look valtest')
+    IP_vital_signs.loc[trainset_stayid] = IP_np_vital_signs_train
+    
+    filepath = os.path.join(db_file_path, 'data_EDis_imputation', f'stayid_first_vitalsign_{name}.pdpkl')
+    IP_vital_signs.to_pickle(filepath)
+    
+    #============================================================
+    try:
+        select_lab_keys = ['BE', 'Cl', 'Ca', 'Glucose', 'Hb', 'Lac', 'PH', 'Na', 'ALT', 'ALB',
+               'ALP', 'NH3', 'AMY', 'AST', 'BIL-D', 'BIL-T', 'CK', 'Crea', 'Ddimer',
+               'GGT', 'Lipase', 'Mg', 'P', 'K', 'FreeT4', 'TnT', 'BUN', 'Band',
+               'Blast', 'Eosin', 'Hct', 'PTINR', 'Lym', 'MCH', 'MCHC', 'MCV', 'Myelo',
+               'Seg', 'PLT', 'PTT', 'WBC', 'UrineRBC', 'UrineWBC']
+        
+        np_hadmid_train_lab = hadmid_first_lab.loc[trainset_hadmid,select_lab_keys].values
+        np_hadmid_all_lab = hadmid_first_lab[select_lab_keys].values
+        
+        #============================================================    
+        print(f'{name}_np_hadmid_first_lab')
+        print(' ip the training set')
+        IP_np_hadmid_lab_train = ip_lab.complete(np_hadmid_train_lab)
+        
+        print(' inference valtest set')
+        IP_np_hadmid_lab_all = ip_lab.complete(np_hadmid_all_lab)
+        IP_hadmid_first_lab = hadmid_first_lab.copy()
+        IP_hadmid_first_lab.loc[:,select_lab_keys] = IP_np_hadmid_lab_all
+    
+        print(' replace the train set without future look valtest')
+        IP_hadmid_first_lab.loc[trainset_hadmid] = IP_np_hadmid_lab_train
+        
+        filepath = os.path.join(db_file_path, 'data_EDis_imputation', f'hadmid_first_lab_{name}.pdpkl')
+        IP_hadmid_first_lab.to_pickle(filepath)
+    except:
+        try:
+            print(' select region decrease')
+            select_lab_keys = ['BE', 'Cl', 'Ca', 'Glucose', 'Hb', 'Lac', 'PH', 'Na', 'ALT', 'ALB',
+                    'ALP', 'AMY', 'AST', 'BIL-T', 'CK', 'Crea',
+                    'Lipase', 'Mg', 'P', 'K', 'TnT', 'BUN', 'Band',
+                    'Eosin', 'Hct', 'PTINR', 'Lym', 'MCH', 'MCHC', 'MCV', 'Myelo',
+                    'Seg', 'PLT', 'PTT', 'WBC', 'UrineRBC', 'UrineWBC']
+            
+            np_hadmid_train_lab = hadmid_first_lab.loc[trainset_hadmid,select_lab_keys].values
+            np_hadmid_all_lab = hadmid_first_lab[select_lab_keys].values
+            
+            #============================================================    
+            print(f'{name}_np_hadmid_first_lab')
+            print(' ip the training set')
+            IP_np_hadmid_lab_train = ip_lab.complete(np_hadmid_train_lab)
+            
+            print(' inference valtest set')
+            IP_np_hadmid_lab_all = ip_lab.complete(np_hadmid_all_lab)
+            IP_hadmid_first_lab = hadmid_first_lab.copy()
+            IP_hadmid_first_lab.loc[:,select_lab_keys] = IP_np_hadmid_lab_all
+        
+            print(' replace the train set without future look valtest')
+            IP_hadmid_first_lab.loc[trainset_hadmid] = IP_np_hadmid_lab_train
+            
+            filepath = os.path.join(db_file_path, 'data_EDis_imputation', f'hadmid_first_lab_{name}.pdpkl')
+            IP_hadmid_first_lab.to_pickle(filepath)     
+        except:
+            print(f' cannot imputation {name}')
+            pass
+
 
 # name = 'MICE'
 # print(f'{name}_np_vital_signs')
@@ -93,22 +174,22 @@ np_hadmid_first_lab = hadmid_first_lab[select_lab_keys].values
 # filepath = os.path.join(db_file_path, 'data_EDis_imputation', f'hadmid_first_lab_{name}.pdpkl')
 # MICE_hadmid_first_lab.to_pickle(filepath)
 
-name = 'KNN'
-print(f'{name}_np_vital_signs')
-MICE_np_vital_signs = KNN(k=4).complete(np_vital_signs)
-MICE_vital_signs = vital_signs.copy()
-MICE_vital_signs.loc[:]=MICE_np_vital_signs
+# name = 'KNN'
+# print(f'{name}_np_vital_signs')
+# MICE_np_vital_signs = KNN(k=4).complete(np_vital_signs)
+# MICE_vital_signs = vital_signs.copy()
+# MICE_vital_signs.loc[:]=MICE_np_vital_signs
 
-filepath = os.path.join(db_file_path, 'data_EDis_imputation', f'stayid_first_vitalsign_{name}.pdpkl')
-MICE_vital_signs.to_pickle(filepath)
+# filepath = os.path.join(db_file_path, 'data_EDis_imputation', f'stayid_first_vitalsign_{name}.pdpkl')
+# MICE_vital_signs.to_pickle(filepath)
 
-print(f'{name}_np_hadmid_first_lab')
-MICE_np_hadmid_first_lab = KNN(k=4).complete(np_hadmid_first_lab)
-MICE_hadmid_first_lab = hadmid_first_lab.copy()
-MICE_hadmid_first_lab.loc[:,select_lab_keys]=MICE_np_hadmid_first_lab
+# print(f'{name}_np_hadmid_first_lab')
+# MICE_np_hadmid_first_lab = KNN(k=4).complete(np_hadmid_first_lab)
+# MICE_hadmid_first_lab = hadmid_first_lab.copy()
+# MICE_hadmid_first_lab.loc[:,select_lab_keys]=MICE_np_hadmid_first_lab
 
-filepath = os.path.join(db_file_path, 'data_EDis_imputation', f'hadmid_first_lab_{name}.pdpkl')
-MICE_hadmid_first_lab.to_pickle(filepath)
+# filepath = os.path.join(db_file_path, 'data_EDis_imputation', f'hadmid_first_lab_{name}.pdpkl')
+# MICE_hadmid_first_lab.to_pickle(filepath)
 
 # select_lab_keys = ['BE', 'Cl', 'Ca', 'Glucose', 'Hb', 'Lac', 'PH', 'Na', 'ALT', 'ALB',
 #         'ALP', 'AMY', 'AST', 'BIL-T', 'CK', 'Crea',
