@@ -223,6 +223,7 @@ def train_mimics(EDisease_Model,
                  noise=True,
                  gpus=0,
                  mlp=False,
+                 name=None
                  ): 
     
     EDisease_Model.to(device)
@@ -253,6 +254,8 @@ def train_mimics(EDisease_Model,
     total_loss = []
     best_auc = 0
     auc_record = []
+    
+    s_type ='mlp' if mlp else 'spectrum'
     
     for ep in range(epoch):   
         t0 = time.time()
@@ -508,14 +511,14 @@ def train_mimics(EDisease_Model,
                                     parallel=parallel)
             except Exception as e:
                 print(e)
-                
+            
             pd_total_auc = pd.DataFrame(auc_record)
-            pd_total_auc.to_csv(f'./loss_record/total_auc_{gpus}.csv', sep = ',')
+            pd_total_auc.to_csv(f'./loss_record/total_auc_{s_type}_{name}.csv', sep = ',')
         
         print('++ Ep Time: {:.1f} Secs ++'.format(time.time()-t0)) 
         total_loss.append(float(epoch_loss/epoch_cases))
         pd_total_loss = pd.DataFrame(total_loss)
-        pd_total_loss.to_csv(f'./loss_record/total_loss_{gpus}.csv', sep = ',')
+        pd_total_loss.to_csv(f'./loss_record/total_loss_{s_type}_{name}.csv', sep = ',')
     print(total_loss) 
 
 
@@ -1028,7 +1031,8 @@ if task=='train_mlp_ip':
                  noise=True,
                  gpus=gpus,
                  device=device,
-                 mlp=mlp) 
+                 mlp=mlp,
+                 name=name) 
 
 if task=='test_mlp_ip':
     print(f' =========== imputation name = {name} ============')
