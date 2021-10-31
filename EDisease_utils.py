@@ -56,24 +56,24 @@ def draw_spectrum():
         xi = p%10
         yi = int(p/10)
         ax = plt.subplot2grid((10,10),(yi,xi))
-        #ax = fig.add_subplot(int(pn))
         ax.plot(value)
-        plt.title(f'Spectrum {0.1*p:.2f}')
+        # ax[yi, xi].axis('off')
+        plt.title(f'Spectrum {0.1*p:.2f}',fontsize=30)
         
-    for p in range(19):        
-        value = ((5*p+5)*thida).sin()
+    for p in range(20):        
+        value = ((4.4736842*p+10)*thida).sin()
 
         xi = p%10
         yi = int(p/10)+8
         ax = plt.subplot2grid((10,10),(yi,xi))
-        #ax = fig.add_subplot(int(pn))
         ax.plot(value)
-        plt.title(f'Spectrum {5*p+5:.0f}')
+        # ax[yi, xi].axis('off')
+        plt.title(f'Spectrum {4.4736842*p+10:.2f}',fontsize=30)
     plt.savefig('./Spectrum_0_95.png')
     
 def draw_spectrum_innerproduct():
     thida = torch.linspace(0,2*math.pi,int(96))
-    tensor = torch.arange(96).unsqueeze(0)
+    tensor = torch.arange(95).unsqueeze(0)
     k_thida = torch.einsum("nm,k->nmk", tensor, thida)
     
     kk = k_thida[0]

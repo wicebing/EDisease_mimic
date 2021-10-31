@@ -65,7 +65,7 @@ class float2spectrum(nn.Module):
         '''
         
         device = tensor.device
-        minmax = float(self.embedding_size)-1e-6
+        minmax = float(self.embedding_size-1)-1e-6
         
         tensor = tensor.clamp(min=-1*minmax,max=minmax)
         
