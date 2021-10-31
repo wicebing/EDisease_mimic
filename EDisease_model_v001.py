@@ -58,10 +58,27 @@ class float2spectrum(nn.Module):
         self.embedding_size = embedding_size
         
     def forward(self, tensor):
+        '''
+        limitation: the cycle will happen in the embedding_size
+        such as embedding_size =96
+        the emb_x will be the same on 1 -> 96, 2-> 97, ...
+        '''
+        
         device = tensor.device
-        thida = torch.linspace(0,2*math.pi,int(self.embedding_size/2),device=device)
+        minmax = float(self.embedding_size)-1e-6
+        
+        tensor = tensor.clamp(min=-1*minmax,max=minmax)
+        
+        # experimental 0 [cos x, sin x] auc 0.846
+        # thida = torch.linspace(0,2*math.pi,int(self.embedding_size/2),device=device)
+        # k_thida = torch.einsum("nm,k->nmk", tensor, thida)
+        # emb_x = torch.cat((k_thida.cos(),k_thida.sin()), dim=-1)
+        
+        # experimental 1 [sin x]
+        thida = torch.linspace(0,2*math.pi,int(self.embedding_size),device=device)
         k_thida = torch.einsum("nm,k->nmk", tensor, thida)
-        emb_x = torch.cat((k_thida.cos(),k_thida.sin()), dim=-1)
+        emb_x = k_thida.sin()
+        
         return emb_x        
 
 class structure_emb(nn.Module):
