@@ -65,7 +65,7 @@ class float2spectrum(nn.Module):
         '''
         
         device = tensor.device
-        minmax = float(self.embedding_size-1)-1e-6
+        minmax = float(self.embedding_size/2)-1e-4
         
         tensor = tensor.clamp(min=-1*minmax,max=minmax)
         
@@ -98,7 +98,7 @@ class structure_emb(nn.Module):
         self.BERTmodel = BertModel(self.Config)
 
     def forward(self, inputs,attention_mask,position_ids,token_type_ids=None):
-        inputs_embeds = self.float2emb(10*inputs)
+        inputs_embeds = self.float2emb(4.8*inputs) # to keep the 10x std data range
         
         outputs = self.BERTmodel(inputs_embeds=inputs_embeds,
                                  attention_mask=attention_mask,

@@ -50,6 +50,7 @@ def draw_spectrum():
     thida = torch.linspace(0,2*math.pi,int(96))
 
     fig = plt.figure(figsize=(48,48),dpi=100)
+    
     for p in range(80):        
         value = (0.1*p*thida).sin()
 
@@ -57,24 +58,26 @@ def draw_spectrum():
         yi = int(p/10)
         ax = plt.subplot2grid((10,10),(yi,xi))
         ax.plot(value)
-        # ax[yi, xi].axis('off')
-        plt.title(f'Spectrum {0.1*p:.2f}',fontsize=30)
+        ax.axis('off')
+        plt.title(f'{0.1*p:.1f}',fontsize=50)
         
     for p in range(20):        
-        value = ((4.4736842*p+10)*thida).sin()
+        value = ((2*p+10)*thida).sin()
 
         xi = p%10
         yi = int(p/10)+8
         ax = plt.subplot2grid((10,10),(yi,xi))
         ax.plot(value)
-        # ax[yi, xi].axis('off')
-        plt.title(f'Spectrum {4.4736842*p+10:.2f}',fontsize=30)
+        ax.axis('off')
+        plt.title(f'{2*p+10:.1f}',fontsize=50)
     plt.savefig('./Spectrum_0_95.png')
     
 def draw_spectrum_innerproduct():
     thida = torch.linspace(0,2*math.pi,int(96))
-    tensor = torch.arange(95).unsqueeze(0)
+    tensor = (torch.arange(96)-47.5).unsqueeze(0)
     k_thida = torch.einsum("nm,k->nmk", tensor, thida)
+    
+    xlabels = list(5*(torch.arange(20)-9.5).numpy())
     
     kk = k_thida[0]
     kt = torch.matmul(kk,kk.T).numpy()
@@ -85,7 +88,11 @@ def draw_spectrum_innerproduct():
 
     fig = plt.figure(figsize=(63,54),dpi=100)
     sns.set(font_scale = 12)
+    # sns.set_xticklabels(['2011','2012','2013','2014','2015','2016','2017','2018'])
     ax = sns.heatmap(ktn_clamp, linewidth=0.,alpha=.9)
+    ax.set_xticklabels(xlabels)
+    ax.set_yticklabels(xlabels)
+    # plt.xticks(rotation=60)
     plt.savefig('./Spectrum_product.png')
     
     
