@@ -38,7 +38,7 @@ try:
     name = sys.argv[3]
     print('*****name = ', name)
 except:
-    name = 'none'
+    name = None
 
 batch_size = 128
 
@@ -644,7 +644,6 @@ def testt_mimics(EDisease_Model,
 '  =======================================================================================================  '   
             
 if task=='train':
-    gpus = 0
     device = f'cuda:{gpus}'
     
     mlp = False
@@ -695,7 +694,7 @@ if task=='train':
                  dloader=DL_train,
                  dloader_v=DL_valid, 
                  lr=1e-5,
-                 epoch=100,
+                 epoch=200,
                  log_interval=10,
                  noise_scale=0.002,
                  mask_ratio=0.33,
@@ -707,7 +706,6 @@ if task=='train':
                  mlp=mlp) 
 
 if task=='test':
-    gpus = 0
     device = f'cuda:{gpus}'
     
     mlp = False

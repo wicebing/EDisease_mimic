@@ -8,6 +8,7 @@ import sys
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import seaborn as sns
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -70,7 +71,21 @@ def draw_spectrum():
         plt.title(f'Spectrum {5*p+5:.0f}')
     plt.savefig('./Spectrum_0_95.png')
     
+def draw_spectrum_innerproduct():
+    thida = torch.linspace(0,2*math.pi,int(96))
+    tensor = torch.arange(96).unsqueeze(0)
+    k_thida = torch.einsum("nm,k->nmk", tensor, thida)
     
+    kk = k_thida[0]
+    kt = torch.matmul(kk,kk.T).numpy()
+    
+    ktn = (kt -kt.mean())/kt.std()
+    ktn_clamp = (ktn-ktn.min())
+    ktn_clamp /= ktn_clamp.max()
 
+    fig = plt.figure(figsize=(63,54),dpi=100)
+    sns.set(font_scale = 12)
+    ax = sns.heatmap(ktn_clamp, linewidth=0.,alpha=.9)
+    plt.savefig('./Spectrum_product.png')
     
     
