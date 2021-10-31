@@ -65,10 +65,11 @@ trainset_hadmid = trainset_hadmid_.set_index('hadm_id').index
 #============================================================
 #============================================================
 #============================================================
-ip_method = {0:{'ip_name':'KNN','ip_model_vs': KNN(k=4),'ip_model_lab':KNN(k=4)},
-             2:{'ip_name':'EM','ip_model_vs': EM(),'ip_model_lab':EM()},
-             3:{'ip_name':'GAIN','ip_model_vs': GAIN(),'ip_model_lab':GAIN()},
-             1:{'ip_name':'MICE','ip_model_vs': MICE(),'ip_model_lab':MICE()},
+ip_method = {
+             # 0:{'ip_name':'KNN','ip_model_vs': KNN(k=4),'ip_model_lab':KNN(k=4)},
+             # 2:{'ip_name':'EM','ip_model_vs': EM(),'ip_model_lab':EM()},
+             # 3:{'ip_name':'GAIN','ip_model_vs': GAIN(),'ip_model_lab':GAIN()},
+             # 1:{'ip_name':'MICE','ip_model_vs': MICE(),'ip_model_lab':MICE()},
              4:{'ip_name':'MIDA','ip_model_vs': MIDA(),'ip_model_lab':MIDA()}
              }
 
@@ -84,20 +85,20 @@ for i, e in ip_method.items():
     
     #============================================================
            
-    print(f'{name}_np_vital_signs')
-    print(' ip the training set')
-    IP_np_vital_signs_train = ip_vs.complete(np_train_vital_signs)
+    # print(f'{name}_np_vital_signs')
+    # print(' ip the training set')
+    # IP_np_vital_signs_train = ip_vs.complete(np_train_vital_signs)
     
-    print(' inference valtest set')
-    IP_np_vital_signs = ip_vs.complete(np_all_vital_signs)
-    IP_vital_signs = vital_signs.copy()
-    IP_vital_signs.loc[:]= IP_np_vital_signs
+    # print(' inference valtest set')
+    # IP_np_vital_signs = ip_vs.complete(np_all_vital_signs)
+    # IP_vital_signs = vital_signs.copy()
+    # IP_vital_signs.loc[:]= IP_np_vital_signs
     
-    print(' replace the train set without future look valtest')
-    IP_vital_signs.loc[trainset_stayid] = IP_np_vital_signs_train
+    # print(' replace the train set without future look valtest')
+    # IP_vital_signs.loc[trainset_stayid] = IP_np_vital_signs_train
     
-    filepath = os.path.join(db_file_path, 'data_EDis_imputation', f'stayid_first_vitalsign_{name}.pdpkl')
-    IP_vital_signs.to_pickle(filepath)
+    # filepath = os.path.join(db_file_path, 'data_EDis_imputation', f'stayid_first_vitalsign_{name}.pdpkl')
+    # IP_vital_signs.to_pickle(filepath)
     
     #============================================================
     try:
@@ -129,9 +130,9 @@ for i, e in ip_method.items():
         try:
             print(' select region decrease')
             select_lab_keys = ['BE', 'Cl', 'Ca', 'Glucose', 'Hb', 'Lac', 'PH', 'Na', 'ALT', 'ALB',
-                    'ALP', 'AMY', 'AST', 'BIL-T', 'CK', 'Crea',
-                    'Lipase', 'Mg', 'P', 'K', 'TnT', 'BUN', 'Band',
-                    'Eosin', 'Hct', 'PTINR', 'Lym', 'MCH', 'MCHC', 'MCV', 'Myelo',
+                    'ALP', 'AST', 'BIL-T', 'CK', 'Crea',
+                    'Mg', 'P', 'K', 'TnT', 'BUN',
+                    'Eosin', 'Hct', 'PTINR', 'Lym', 'MCH', 'MCHC', 'MCV', 
                     'Seg', 'PLT', 'PTT', 'WBC', 'UrineRBC', 'UrineWBC']
             
             np_hadmid_train_lab = hadmid_first_lab.loc[trainset_hadmid,select_lab_keys].values

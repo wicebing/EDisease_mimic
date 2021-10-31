@@ -1133,6 +1133,7 @@ if task=='test_mlp_ip':
     print('dim_model PARAMETERS: ' ,count_parameters(dim_model))
     print('emb_emb PARAMETERS: ' ,count_parameters(emb_emb))
     print('stc2emb PARAMETERS: ' ,count_parameters(stc2emb))
+    
     print('EDisease_Model PARAMETERS: ' ,count_parameters(EDisease_Model))
     
     try: 
