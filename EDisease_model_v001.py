@@ -62,6 +62,7 @@ class float2spectrum(nn.Module):
         limitation: the cycle will happen in the embedding_size
         such as embedding_size =96
         the emb_x will be the same on 1 -> 96, 2-> 97, ...
+        due to the minus exist the minmax must be the half of embedding_size to avoid aliasing effect 2x sample freq
         '''
         
         device = tensor.device
