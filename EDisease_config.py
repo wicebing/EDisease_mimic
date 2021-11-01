@@ -24,10 +24,10 @@ class StructrualConfig(object):
     vocab_size = 64
     type_vocab_size = 1024
     hidden_dropout_prob = 0.1
-    num_attention_heads = 8
+    num_attention_heads = 16
     attention_probs_dropout_prob = 0.2
     intermediate_size = 64
-    num_hidden_layers = 4
+    num_hidden_layers = 3
     classifier_num = 2
     structure_size = 60
 

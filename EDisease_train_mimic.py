@@ -663,6 +663,11 @@ if task=='train':
                               alpha=alpha,
                               beta=beta,
                               gamma=gamma)
+
+    print('dim_model PARAMETERS: ' ,count_parameters(dim_model))
+    print('emb_emb PARAMETERS: ' ,count_parameters(emb_emb))
+    print('stc2emb PARAMETERS: ' ,count_parameters(stc2emb))
+    print('EDisease_Model PARAMETERS: ' ,count_parameters(EDisease_Model))
     
     try: 
         EDisease_Model = load_checkpoint(checkpoint_file,'EDisease_Model_best.pth',EDisease_Model)
@@ -725,6 +730,11 @@ if task=='test':
                               alpha=alpha,
                               beta=beta,
                               gamma=gamma)
+
+    print('dim_model PARAMETERS: ' ,count_parameters(dim_model))
+    print('emb_emb PARAMETERS: ' ,count_parameters(emb_emb))
+    print('stc2emb PARAMETERS: ' ,count_parameters(stc2emb))
+    print('EDisease_Model PARAMETERS: ' ,count_parameters(EDisease_Model))
     
     try: 
         EDisease_Model = load_checkpoint(checkpoint_file,'EDisease_Model_best.pth',EDisease_Model)
@@ -787,6 +797,11 @@ if task=='train_mlp':
                               alpha=alpha,
                               beta=beta,
                               gamma=gamma)
+    
+    print('dim_model PARAMETERS: ' ,count_parameters(dim_model))
+    print('emb_emb PARAMETERS: ' ,count_parameters(emb_emb))
+    print('stc2emb PARAMETERS: ' ,count_parameters(stc2emb))
+    print('EDisease_Model PARAMETERS: ' ,count_parameters(EDisease_Model))
     
     try: 
         EDisease_Model = load_checkpoint(checkpoint_file,'EDisease_Model_best.pth',EDisease_Model)
@@ -989,7 +1004,12 @@ if task=='train_mlp_ip':
                               alpha=alpha,
                               beta=beta,
                               gamma=gamma)
-    
+
+    print('dim_model PARAMETERS: ' ,count_parameters(dim_model))
+    print('emb_emb PARAMETERS: ' ,count_parameters(emb_emb))
+    print('stc2emb PARAMETERS: ' ,count_parameters(stc2emb))
+    print('EDisease_Model PARAMETERS: ' ,count_parameters(EDisease_Model))    
+
     try: 
         EDisease_Model = load_checkpoint(checkpoint_file,'EDisease_Model_best.pth',EDisease_Model)
         print(' ** Complete Load CLS EDisease Model ** ')
@@ -1135,7 +1155,6 @@ if task=='test_mlp_ip':
     print('dim_model PARAMETERS: ' ,count_parameters(dim_model))
     print('emb_emb PARAMETERS: ' ,count_parameters(emb_emb))
     print('stc2emb PARAMETERS: ' ,count_parameters(stc2emb))
-    
     print('EDisease_Model PARAMETERS: ' ,count_parameters(EDisease_Model))
     
     try: 
