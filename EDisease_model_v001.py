@@ -66,7 +66,7 @@ class float2spectrum(nn.Module):
         '''
         
         device = tensor.device
-        minmax = float(self.embedding_size/2)-1e-4
+        minmax = float(self.embedding_size)-1e-1
         
         tensor = tensor.clamp(min=-1*minmax,max=minmax)
         
@@ -76,7 +76,7 @@ class float2spectrum(nn.Module):
         # emb_x = torch.cat((k_thida.cos(),k_thida.sin()), dim=-1)
         
         # experimental 1 [sin x]
-        thida = torch.linspace(0,2*math.pi,int(self.embedding_size),device=device)
+        thida = torch.linspace(0,math.pi,int(self.embedding_size),device=device)
         k_thida = torch.einsum("nm,k->nmk", tensor, thida)
         emb_x = k_thida.sin()
         
@@ -99,7 +99,7 @@ class structure_emb(nn.Module):
         self.BERTmodel = BertModel(self.Config)
 
     def forward(self, inputs,attention_mask,position_ids,token_type_ids=None):
-        inputs_embeds = self.float2emb(4.8*inputs) # to keep the 10x std data range
+        inputs_embeds = self.float2emb(9.6*inputs) # to keep the 10x std data range
         
         outputs = self.BERTmodel(inputs_embeds=inputs_embeds,
                                  attention_mask=attention_mask,

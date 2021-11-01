@@ -47,7 +47,7 @@ def load_checkpoint(checkpoint_file,checkpoint_path, model):
     return model
 
 def draw_spectrum():
-    thida = torch.linspace(0,2*math.pi,int(96))
+    thida = torch.linspace(0,math.pi,int(96))
 
     fig = plt.figure(figsize=(48,48),dpi=100)
     
@@ -62,22 +62,22 @@ def draw_spectrum():
         plt.title(f'{0.1*p:.1f}',fontsize=50)
         
     for p in range(20):        
-        value = ((2*p+10)*thida).sin()
+        value = ((4.5*p+10)*thida).sin()
 
         xi = p%10
         yi = int(p/10)+8
         ax = plt.subplot2grid((10,10),(yi,xi))
         ax.plot(value)
         ax.axis('off')
-        plt.title(f'{2*p+10:.1f}',fontsize=50)
+        plt.title(f'{4.5*p+10:.1f}',fontsize=50)
     plt.savefig('./Spectrum_0_95.png')
     
 def draw_spectrum_innerproduct():
-    thida = torch.linspace(0,2*math.pi,int(96))
-    tensor = (torch.arange(96)-47.5).unsqueeze(0)
+    thida = torch.linspace(0,math.pi,int(96))
+    tensor = (2*(torch.arange(96)-47.5)).unsqueeze(0)
     k_thida = torch.einsum("nm,k->nmk", tensor, thida)
     
-    xlabels = list(5*(torch.arange(20)-9.5).numpy())
+    xlabels = list(5*(2*(torch.arange(20)-9.5)).numpy())
     
     kk = k_thida[0]
     kt = torch.matmul(kk,kk.T).numpy()
