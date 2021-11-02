@@ -70,19 +70,43 @@ def draw_spectrum():
         ax.plot(value)
         ax.axis('off')
         plt.title(f'{4.5*p+10:.1f}',fontsize=50)
-    plt.savefig('./Spectrum_0_95.png')
-    
-def draw_spectrum_innerproduct():
-    thida = torch.linspace(0,math.pi,int(96))
+    plt.savefig('./Spectrum_0_95sc.png')
+
+def draw_test():
+    thida_pos = 1./ (10000 ** (torch.linspace(0,math.pi,int(48)).float()/math.pi))
+    thida_neg = 1./ (10000 ** (torch.linspace(math.pi,0,int(48)).float()/math.pi))
+    thida = torch.cat([-1*thida_neg,thida_pos],dim=-1)
     tensor = (2*(torch.arange(96)-47.5)).unsqueeze(0)
     k_thida = torch.einsum("nm,k->nmk", tensor, thida)
+    k_thida = k_thida.sin()
+    
+    fig = plt.figure(figsize=(48,48),dpi=100)
+    
+    for p in range(96):        
+        value =k_thida[0][p]
+        xi = p%10
+        yi = int(p/10)
+        ax = plt.subplot2grid((10,10),(yi,xi))
+        ax.plot(value)
+        ax.axis('off')
+        plt.title(f'{p-47.5:.1f}',fontsize=50)
+        
+    plt.savefig('./Spectrum_test.png')    
+
+def draw_spectrum_innerproduct():
+    thida_pos = 1./ (10000 ** (torch.linspace(0,math.pi,int(48)).float()/math.pi))
+    thida_neg = 1./ (10000 ** (torch.linspace(math.pi,0,int(48)).float()/math.pi))
+    thida = torch.cat([-1*thida_neg,thida_pos],dim=-1)
+    tensor = (2*(torch.arange(96)-47.5)).unsqueeze(0)
+    k_thida = torch.einsum("nm,k->nmk", tensor, thida)
+    k_thida = k_thida.sin()
     
     xlabels = list(5*(2*(torch.arange(20)-9.5)).numpy())
     
     kk = k_thida[0]
-    kt = torch.matmul(kk,kk.T).numpy()
-    
-    ktn = (kt -kt.mean())/kt.std()
+    ktn = torch.matmul(kk,kk).numpy()
+    # ktn = (kt -kt.mean())/kt.std()
+ 
     ktn_clamp = (ktn-ktn.min())
     ktn_clamp /= ktn_clamp.max()
 
