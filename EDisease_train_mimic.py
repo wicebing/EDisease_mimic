@@ -777,7 +777,6 @@ if task=='test':
     print(f'auc: {roc_auc:.3f}')
     
 if task=='train_mlp':
-    gpus = 1
     device = f'cuda:{gpus}'
     
     mlp = True
@@ -845,7 +844,6 @@ if task=='train_mlp':
                  mlp=mlp) 
 
 if task=='test_mlp':
-    gpus = 1
     device = f'cuda:{gpus}'
     
     mlp = True
