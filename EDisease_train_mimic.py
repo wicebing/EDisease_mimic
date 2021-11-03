@@ -909,7 +909,7 @@ if task=='test_mlp':
     
     roc_auc = auc(fpr,tpr)
     
-    valres.to_pickle(f'./result_pickles/EDmlpFlat_{roc_auc*1000:.0f}.pkl')
+    valres.to_pickle(f'./result_pickles/EDmlpFlat_{name}_{roc_auc*1000:.0f}.pkl')
 
     print(f'auc: {roc_auc:.3f}')
         
