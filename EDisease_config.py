@@ -26,7 +26,7 @@ class StructrualConfig(object):
     hidden_dropout_prob = 0.1
     num_attention_heads = 12
     attention_probs_dropout_prob = 0.2
-    intermediate_size = 64
+    intermediate_size = 128
     num_hidden_layers = 12
     classifier_num = 2
     structure_size = 60

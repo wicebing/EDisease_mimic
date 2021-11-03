@@ -81,8 +81,8 @@ class float2spectrum(nn.Module):
         # emb_x = k_thida.sin()
         
         # experimental 2 [transformer position token]
-        thida_pos = 1./ (float(self.embedding_size/2) ** (torch.linspace(0,math.pi,int(self.embedding_size/2),device=device).float()/math.pi))
-        thida_neg = 1./ (float(self.embedding_size/2) ** (torch.linspace(math.pi,0,int(self.embedding_size/2),device=device).float()/math.pi))
+        thida_pos = 1./ (10000 ** (torch.linspace(0,math.pi,int(self.embedding_size/2),device=device).float()/math.pi))
+        thida_neg = 1./ (10000 ** (torch.linspace(math.pi,0,int(self.embedding_size/2),device=device).float()/math.pi))
         thida = torch.cat([-1*thida_neg,thida_pos],dim=-1)
         k_thida = torch.einsum("nm,k->nmk", tensor, thida)
         emb_x = k_thida.sin()
