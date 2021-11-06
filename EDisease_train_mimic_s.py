@@ -207,9 +207,6 @@ DL_test = DataLoader(dataset = ds_test,
     
 def train_mimics(EDisease_Model,
                  stc2emb,
-                 emb_emb,
-                 dim_model,
-                 baseBERT,
                  dloader,
                  dloader_v,
                  checkpoint_file,
@@ -224,30 +221,20 @@ def train_mimics(EDisease_Model,
                  gpus=0,
                  mlp=False,
                  name=None,
-                 only_dx=False
                  ): 
     
     EDisease_Model.to(device)
     stc2emb.to(device)
-    emb_emb.to(device)
-    dim_model.to(device)
-    baseBERT.to(device)
-    
-    baseBERT.eval()
-        
+           
     model_optimizer_eds = optim.Adam(EDisease_Model.parameters(), lr=lr)
     model_optimizer_s2e = optim.Adam(stc2emb.parameters(), lr=lr)
-    model_optimizer_e2e = optim.Adam(emb_emb.parameters(), lr=lr)
-    model_optimizer_dim = optim.Adam(dim_model.parameters(), lr=lr)
+
     
     criterion_em = nn.CrossEntropyLoss().to(device)
     
     if parallel:
         EDisease_Model = torch.nn.DataParallel(EDisease_Model)
         stc2emb = torch.nn.DataParallel(stc2emb)
-        emb_emb = torch.nn.DataParallel(emb_emb)
-        dim_model = torch.nn.DataParallel(dim_model)
-        baseBERT = torch.nn.DataParallel(baseBERT)
     else:
         if device == 'cuda':
             torch.cuda.set_device(gpus)
@@ -265,55 +252,17 @@ def train_mimics(EDisease_Model,
         
         for batch_idx, sample in enumerate(dloader):
             model_optimizer_eds.zero_grad()
-            model_optimizer_dim.zero_grad()
             model_optimizer_s2e.zero_grad()
-            model_optimizer_e2e.zero_grad()
             
             loss = torch.tensor(0.)
 
             sample = {k:v.to(device) for k,v in sample.items()}
             
-            # for text data
-            
-            # c,cm = sample['cc'],sample['mask_cc']
-            # output = baseBERT(c.long(),cm.long())
-            # c_emb = output['heads']
-            # c_emb_emb = emb_emb(c_emb)
 
-            h,hm = sample['ehx'],sample['mask_ehx']
-            output = baseBERT(h.long(),hm.long())
-            h_emb = output['heads']
-            em_h_emb = emb_emb(h_emb)
-            
-            stack_hx_n = sample['stack_hx_n']
-            bs = len(stack_hx_n)
-            
-            hx_max = stack_hx_n.max()
-            hx_padding = em_h_emb[:1]
-            
-            cumsum_hx_n = torch.cumsum(stack_hx_n,0)
-            h_emb_cat_ = []
-                    
-            attention_mask_h = torch.ones([bs,hx_max],device=device)
-            attention_mask_h[:,0] = 0
-            
-            for i,e in enumerate(cumsum_hx_n):
-                hx_num = stack_hx_n[i]
-                h_concat = em_h_emb[:cumsum_hx_n[i]] if i < 1 else em_h_emb[cumsum_hx_n[i-1]:cumsum_hx_n[i]]
-                pad_num = hx_max - hx_num
-                if pad_num>0:
-                    hx_pads = [hx_padding]*pad_num
-                    h_concat_pad = torch.cat([h_concat,*hx_pads],dim=0)
-                    attention_mask_h[i,hx_num:] = 0
-                else:
-                    h_concat_pad = h_concat
-                h_emb_cat_.append(h_concat_pad)
-                
-            h_emb_emb = torch.stack(h_emb_cat_)
-            
-            
             # for structual data
             s,sp, sm = sample['structure'],sample['structure_position_ids'], sample['structure_attention_mask']
+            
+            bs = len(s)
                   
             if noise:
                 normalization = torch.ones(s.shape).to(device)
@@ -325,69 +274,13 @@ def train_mimics(EDisease_Model,
             s_emb = stc2emb(inputs=s_noise,
                                  attention_mask=sm,
                                  position_ids=sp)
-            s_emb_org = stc2emb(inputs=s,
-                                 attention_mask=sm,
-                                 position_ids=sp)
+
             
-            # make EDisease input data
-            things = {}
-            things_org ={}
-            
-            if not only_dx:
-                things['s'] = {'emb':s_emb,
-                               'attention_mask':torch.ones(s_emb.shape[:2],device=device).long(),
-                               'position_id':5*torch.ones(s_emb.shape[:2],device=device).long()
-                               }
-                things_org['s'] = {'emb':s_emb_org,
-                                   'attention_mask':torch.ones(s_emb.shape[:2],device=device).long(),
-                                   'position_id':5*torch.ones(s_emb.shape[:2],device=device).long()
-                                   }
-            things['h'] = {'emb':h_emb_emb,
-                           'attention_mask':attention_mask_h.long(),
-                           'position_id':7*torch.ones(h_emb_emb.shape[:2],device=device).long()
-                           }
-            # thigns['c'] = {'emb':c_emb_emb.unsqueeze(1),
-            #                'attention_mask':torch.ones(c_emb_emb.unsqueeze(1).shape[:2],device=device),
-            #                'position_id':6*torch.ones(c_emb_emb.unsqueeze(1).shape[:2],device=device)
-            #                }
-            
-            things_org['h'] = {'emb':h_emb_emb,
-                               'attention_mask':attention_mask_h.long(),
-                               'position_id':7*torch.ones(h_emb_emb.shape[:2],device=device).long()
-                               }
 
 
-            outp = EDisease_Model(things,
-                                  mask_ratio=mask_ratio
-                                  )
-            EDisease = outp['EDisease']
-            predict = outp['predict']
+            predict = EDisease_Model.classifier(s_emb[:,0,:])
 
-            outp2 = EDisease_Model(things=things_org,
-                                   mask_ratio=mask_ratio
-                                   )
-            EDisease2 = outp2['EDisease']
-            
-            EDiseaseFake = torch.cat([EDisease[1:],EDisease[:1]],dim=0)
-            
-            mode = 'D' if batch_idx%2==0 else 'G'
-            ptloss = True if batch_idx%299==3 else False
-            
-            things_e = {'e':{'emb':EDisease.unsqueeze(1),
-                             'emb2':EDisease2.unsqueeze(1),
-                             'embf':EDiseaseFake.unsqueeze(1),
-                             'attention_mask':torch.ones(EDisease.unsqueeze(1).shape[:2],device=device),
-                             'position_id':4*torch.ones(EDisease.unsqueeze(1).shape[:2],device=device)
-                             }
-                        }
 
-            loss_dim = dim_model(things=things,
-                                 things_e=things_e,
-                                 soft=0.7, 
-                                 mask_ratio=mask_ratio,
-                                 mode=mode, 
-                                 ptloss=ptloss,
-                                 ep=ep)
             
             trg = sample['trg']
             
@@ -395,25 +288,24 @@ def train_mimics(EDisease_Model,
             
             loss_cls = criterion_em(predict,trg_bool)
             
-            loss = loss_dim+loss_cls
+            loss = loss_cls
                 
             loss.sum().backward()
             model_optimizer_eds.step()
-            model_optimizer_dim.step()
             model_optimizer_s2e.step()
-            model_optimizer_e2e.step()
                      
             with torch.no_grad():
                 epoch_loss += loss.item()*bs
                 epoch_cases += bs
-
+                
+            ptloss = True if batch_idx%299==3 else False
             if ptloss:
                 print('  ========================================================== ')
-                print('Ep:{} [{} ({:.0f}%)/ ep_time:{:.0f}min] L DIM:{:.4f} L CLS:{:.4f}'.format(
+                print('Ep:{} [{} ({:.0f}%)/ ep_time:{:.0f}min] L CLS:{:.4f}'.format(
                         ep, batch_idx * batch_size,
                         100. * batch_idx / len(dloader),
                         (time.time()-t0)*len(dloader)/(60*(batch_idx+1)),
-                        loss_dim.item(), loss_cls.item()
+                        loss_cls.item()
                         )) 
                 print(predict[:4],predict.shape)
                 print(trg_bool[:4],trg_bool.shape)
@@ -425,16 +317,8 @@ def train_mimics(EDisease_Model,
                             model=EDisease_Model,
                             parallel=parallel)
             save_checkpoint(checkpoint_file=checkpoint_file,
-                            checkpoint_path='dim_model.pth',
-                            model=dim_model,
-                            parallel=parallel)
-            save_checkpoint(checkpoint_file=checkpoint_file,
                             checkpoint_path='stc2emb.pth',
                             model=stc2emb,
-                            parallel=parallel)
-            save_checkpoint(checkpoint_file=checkpoint_file,
-                            checkpoint_path='emb_emb.pth',
-                            model=emb_emb,
                             parallel=parallel)
             print('======= epoch:%i ========'%ep)
             
@@ -444,12 +328,7 @@ def train_mimics(EDisease_Model,
                                                      )
             
             vstc2emb = ED_model.structure_emb(S_config) if not mlp else ED_model.structure_emb_mlp(S_config)
-            vemb_emb = ED_model.emb_emb(T_config)
         
-            vdim_model = ED_model.DIM(T_config=T_config,
-                                      alpha=alpha,
-                                      beta=beta,
-                                      gamma=gamma)
             
             try: 
                 vEDisease_Model = load_checkpoint(checkpoint_file,'EDisease_Model.pth',vEDisease_Model)
@@ -458,31 +337,17 @@ def train_mimics(EDisease_Model,
                 print('*** No Pretrain_EDisease_CLS_Model ***')
         
             try:     
-                vdim_model = load_checkpoint(checkpoint_file,'dim_model.pth',vdim_model)
-            except:
-                print('*** No Pretrain_dim_model ***')
-        
-            try:     
                 vstc2emb = load_checkpoint(checkpoint_file,'stc2emb.pth',vstc2emb)
             except:
                 print('*** No Pretrain_stc2emb ***')
         
-            try:     
-                vemb_emb = load_checkpoint(checkpoint_file,'emb_emb.pth',vemb_emb)
-            except:
-                print('*** No Pretrain_emb_emb ***')
-
             try:
                 valres= testt_mimics(vEDisease_Model,
                                      vstc2emb,
-                                     vemb_emb,
-                                     vdim_model,
-                                     baseBERT,
                                      dloader_v,
                                      parallel=False,
                                      gpus=gpus,
-                                     device=device,
-                                     only_dx=only_dx)               
+                                     device=device,)               
 
                 fpr, tpr, _ = roc_curve(valres['ground_truth'].values, valres['probability'].values)
                 
@@ -499,53 +364,36 @@ def train_mimics(EDisease_Model,
                                     model=EDisease_Model,
                                     parallel=parallel)
                     save_checkpoint(checkpoint_file=checkpoint_file,
-                                    checkpoint_path='dim_model_best.pth',
-                                    model=dim_model,
-                                    parallel=parallel)
-                    save_checkpoint(checkpoint_file=checkpoint_file,
                                     checkpoint_path='stc2emb_best.pth',
                                     model=stc2emb,
-                                    parallel=parallel)
-                    save_checkpoint(checkpoint_file=checkpoint_file,
-                                    checkpoint_path='emb_emb_best.pth',
-                                    model=emb_emb,
                                     parallel=parallel)
             except Exception as e:
                 print(e)
             
             pd_total_auc = pd.DataFrame(auc_record)
-            pd_total_auc.to_csv(f'./loss_record/total_auc_{s_type}_{name}.csv', sep = ',')
+            pd_total_auc.to_csv(f'./loss_record/total_auc_s_{s_type}_{name}.csv', sep = ',')
         
         print('++ Ep Time: {:.1f} Secs ++'.format(time.time()-t0)) 
         total_loss.append(float(epoch_loss/epoch_cases))
         pd_total_loss = pd.DataFrame(total_loss)
-        pd_total_loss.to_csv(f'./loss_record/total_loss_{s_type}_{name}.csv', sep = ',')
+        pd_total_loss.to_csv(f'./loss_record/total_loss_s_{s_type}_{name}.csv', sep = ',')
     print(total_loss) 
 
 
 def testt_mimics(EDisease_Model,
                  stc2emb,
-                 emb_emb,
-                 dim_model,
-                 baseBERT,
                  dloader,
                  device,
                  parallel=parallel,
                  gpus=0,
-                 only_dx=False
                  ): 
     
     EDisease_Model.to(device)
     stc2emb.to(device)
-    emb_emb.to(device)
-    dim_model.to(device)
-    baseBERT.to(device)
-    
-    baseBERT.eval()
+
     EDisease_Model.eval()
     stc2emb.eval()
-    emb_emb.eval()
-    dim_model.eval()
+
         
     if device == 'cuda':
         torch.cuda.set_device(gpus)
@@ -557,45 +405,7 @@ def testt_mimics(EDisease_Model,
 
             sample = {k:v.to(device) for k,v in sample.items()}
             
-            # for text data
-            
-            # c,cm = sample['cc'],sample['mask_cc']
-            # output = baseBERT(c.long(),cm.long())
-            # c_emb = output['heads']
-            # c_emb_emb = emb_emb(c_emb)
-
-            h,hm = sample['ehx'],sample['mask_ehx']
-            output = baseBERT(h.long(),hm.long())
-            h_emb = output['heads']
-            em_h_emb = emb_emb(h_emb)
-            
-            stack_hx_n = sample['stack_hx_n']
-            bs = len(stack_hx_n)
-            
-            hx_max = stack_hx_n.max()
-            hx_padding = em_h_emb[:1]
-            
-            cumsum_hx_n = torch.cumsum(stack_hx_n,0)
-            h_emb_cat_ = []
-                    
-            attention_mask_h = torch.ones([bs,hx_max],device=device)
-            attention_mask_h[:,0] = 0
-            
-            for i,e in enumerate(cumsum_hx_n):
-                hx_num = stack_hx_n[i]
-                h_concat = em_h_emb[:cumsum_hx_n[i]] if i < 1 else em_h_emb[cumsum_hx_n[i-1]:cumsum_hx_n[i]]
-                pad_num = hx_max - hx_num
-                if pad_num>0:
-                    hx_pads = [hx_padding]*pad_num
-                    h_concat_pad = torch.cat([h_concat,*hx_pads],dim=0)
-                    attention_mask_h[i,hx_num:] = 0
-                else:
-                    h_concat_pad = h_concat
-                h_emb_cat_.append(h_concat_pad)
-                
-            h_emb_emb = torch.stack(h_emb_cat_)
-            
-            
+                     
             # for structual data
             s,sp, sm = sample['structure'],sample['structure_position_ids'], sample['structure_attention_mask']
                
@@ -603,24 +413,7 @@ def testt_mimics(EDisease_Model,
                                  attention_mask=sm,
                                  position_ids=sp)
             
-            # make EDisease input data
-            things={}
-            if not only_dx:
-                things['s'] = {'emb':s_emb,
-                               'attention_mask':torch.ones(s_emb.shape[:2],device=device).long(),
-                               'position_id':5*torch.ones(s_emb.shape[:2],device=device).long()
-                               }
-
-            things['h'] = {'emb':h_emb_emb,
-                           'attention_mask':attention_mask_h.long(),
-                           'position_id':7*torch.ones(h_emb_emb.shape[:2],device=device).long()
-                           }
-
-
-            outp = EDisease_Model(things,
-                                  mask_ratio=0.
-                                  )
-            predict = outp['predict']
+            predict = EDisease_Model.classifier(s_emb[:,0,:])
 
             trg = sample['trg']
             trg_bool = (trg >= 7).long()
@@ -647,7 +440,7 @@ if task=='train':
     device = f'cuda:{gpus}'
     
     mlp = False
-    checkpoint_file = '../checkpoint_EDs/EDisease_spectrum_flat'
+    checkpoint_file = '../checkpoint_EDs_OnlyS/EDisease_spectrum_flat'
     if not os.path.isdir(checkpoint_file):
         os.makedirs(checkpoint_file)
         print(f' make dir {checkpoint_file}')
@@ -693,9 +486,6 @@ if task=='train':
 # ====
     train_mimics(EDisease_Model=EDisease_Model,
                  stc2emb=stc2emb,
-                 emb_emb=emb_emb,
-                 dim_model=dim_model,
-                 baseBERT=baseBERT,
                  dloader=DL_train,
                  dloader_v=DL_valid, 
                  lr=1e-5,
@@ -714,7 +504,7 @@ if task=='test':
     device = f'cuda:{gpus}'
     
     mlp = False
-    checkpoint_file = '../checkpoint_EDs/EDisease_spectrum_flat'
+    checkpoint_file = '../checkpoint_EDs_OnlyS/EDisease_spectrum_flat'
     if not os.path.isdir(checkpoint_file):
         os.makedirs(checkpoint_file)
         print(f' make dir {checkpoint_file}')
@@ -760,9 +550,6 @@ if task=='test':
 # ====
     valres= testt_mimics(EDisease_Model,
                          stc2emb,
-                         emb_emb,
-                         dim_model,
-                         baseBERT,
                          DL_test,
                          parallel=False,
                          gpus=gpus,
@@ -772,7 +559,7 @@ if task=='test':
     
     roc_auc = auc(fpr,tpr)
     
-    valres.to_pickle(f'./result_pickles/EDspectrumFlat_{roc_auc*1000:.0f}.pkl')
+    valres.to_pickle(f'./result_pickles/EDspectrumFlat_OnlyS_{roc_auc*1000:.0f}.pkl')
 
     print(f'auc: {roc_auc:.3f}')
     
@@ -784,7 +571,7 @@ if task=='train_mlp':
     device = f'cuda:{gpus}'
     
     mlp = True
-    checkpoint_file = f'../checkpoint_EDs/EDisease_spectrum_flat_oldstr2emb_{name}'
+    checkpoint_file = f'../checkpoint_EDs_OnlyS/EDisease_spectrum_flat_oldstr2emb_{name}'
     if not os.path.isdir(checkpoint_file):
         os.makedirs(checkpoint_file)
         print(f' make dir {checkpoint_file}')
@@ -830,9 +617,6 @@ if task=='train_mlp':
 # ====
     train_mimics(EDisease_Model=EDisease_Model,
                  stc2emb=stc2emb,
-                 emb_emb=emb_emb,
-                 dim_model=dim_model,
-                 baseBERT=baseBERT,
                  dloader=DL_train,
                  dloader_v=DL_valid, 
                  lr=1e-5,
@@ -845,8 +629,7 @@ if task=='train_mlp':
                  noise=True,
                  gpus=gpus,
                  device=device,
-                 mlp=mlp,
-                 only_dx=only_dx) 
+                 mlp=mlp) 
 
 if task=='test_mlp':
     only_dx = True if name=='only_dx' else False
@@ -855,7 +638,7 @@ if task=='test_mlp':
     device = f'cuda:{gpus}'
     
     mlp = True
-    checkpoint_file = f'../checkpoint_EDs/EDisease_spectrum_flat_oldstr2emb_{name}'
+    checkpoint_file = f'../checkpoint_EDs_OnlyS/EDisease_spectrum_flat_oldstr2emb_{name}'
     if not os.path.isdir(checkpoint_file):
         os.makedirs(checkpoint_file)
         print(f' make dir {checkpoint_file}')
@@ -896,20 +679,17 @@ if task=='test_mlp':
 # ====
     valres= testt_mimics(EDisease_Model,
                          stc2emb,
-                         emb_emb,
-                         dim_model,
-                         baseBERT,
                          DL_test,
                          parallel=False,
                          gpus=gpus,
                          device=device,
-                         only_dx=only_dx)               
+                         )               
 
     fpr, tpr, _ = roc_curve(valres['ground_truth'].values, valres['probability'].values)
     
     roc_auc = auc(fpr,tpr)
     
-    valres.to_pickle(f'./result_pickles/EDmlpFlat_{name}_{roc_auc*1000:.0f}.pkl')
+    valres.to_pickle(f'./result_pickles/EDmlpFlat_OnlyS_{name}_{roc_auc*1000:.0f}.pkl')
 
     print(f'auc: {roc_auc:.3f}')
         
@@ -995,7 +775,7 @@ if task=='train_mlp_ip':
     
     device = f'cuda:{gpus}'
     mlp = True
-    checkpoint_file = f'../checkpoint_EDs/EDisease_spectrum_flat_oldstr2emb_{name}'
+    checkpoint_file = f'../checkpoint_EDs_OnlyS/EDisease_spectrum_flat_oldstr2emb_{name}'
     if not os.path.isdir(checkpoint_file):
         os.makedirs(checkpoint_file)
         print(f' make dir {checkpoint_file}')
@@ -1139,7 +919,7 @@ if task=='test_mlp_ip':
     device = f'cuda:{gpus}'
     
     mlp = True
-    checkpoint_file = f'../checkpoint_EDs/EDisease_spectrum_flat_oldstr2emb_{name}'
+    checkpoint_file = f'../checkpoint_EDs_OnlyS/EDisease_spectrum_flat_oldstr2emb_{name}'
     if not os.path.isdir(checkpoint_file):
         os.makedirs(checkpoint_file)
         print(f' make dir {checkpoint_file}')
@@ -1194,6 +974,6 @@ if task=='test_mlp_ip':
     
     roc_auc = auc(fpr,tpr)
     
-    valres.to_pickle(f'./result_pickles/EDmlpFlat_{name}_{roc_auc*1000:.0f}.pkl')
+    valres.to_pickle(f'./result_pickles/EDmlpFlat_OnlyS_{name}_{roc_auc*1000:.0f}.pkl')
 
     print(f'auc: {roc_auc:.3f}')

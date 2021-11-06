@@ -118,11 +118,25 @@ class structure_emb(nn.Module):
 class structure_emb_mlp(nn.Module):
     def __init__(self, config):
         super(structure_emb_mlp, self).__init__()
-        self.stc2emb = nn.Sequential(nn.Linear(config.structure_size,2*config.hidden_size),
-                                     nn.LayerNorm(2*config.hidden_size),
+        self.stc2emb_0 = nn.Sequential(nn.Linear(config.structure_size,4*config.hidden_size),
+                                     nn.LayerNorm(4*config.hidden_size),
                                      nn.GELU(),
                                      nn.Dropout(0.5),
-                                     nn.Linear(2*config.hidden_size,2*config.hidden_size),
+                                     nn.Linear(4*config.hidden_size,4*config.hidden_size),
+                                     nn.LayerNorm(4*config.hidden_size),
+                                     nn.GELU(),
+                                     nn.Dropout(0.5),
+                                     )
+        self.stc2emb_1 = nn.Sequential(nn.Linear(4*config.hidden_size,4*config.hidden_size),
+                                     nn.LayerNorm(4*config.hidden_size),
+                                     nn.GELU(),
+                                     nn.Dropout(0.5),
+                                     nn.Linear(4*config.hidden_size,4*config.hidden_size),
+                                     nn.LayerNorm(4*config.hidden_size),
+                                     nn.GELU(),
+                                     nn.Dropout(0.5),
+                                     )
+        self.stc2emb_2 = nn.Sequential(nn.Linear(4*config.hidden_size,2*config.hidden_size),
                                      nn.LayerNorm(2*config.hidden_size),
                                      nn.GELU(),
                                      nn.Dropout(0.5),
@@ -131,7 +145,11 @@ class structure_emb_mlp(nn.Module):
                                      )
 
     def forward(self, inputs,attention_mask=None,position_ids=None,token_type_ids=None):
-        pooled_output = self.stc2emb(inputs)
+        pooled_output = self.stc2emb_0(inputs)
+        for i in range(4):
+            hidden = self.stc2emb_1(pooled_output)
+            pooled_output = pooled_output + hidden
+        pooled_output = self.stc2emb_2(pooled_output)
         return pooled_output.unsqueeze(1)
 
 class emb_emb(nn.Module):

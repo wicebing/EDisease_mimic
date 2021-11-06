@@ -76,6 +76,7 @@ def draw_test():
     thida_pos = 1./ (10000 ** (torch.linspace(0,math.pi,int(48)).float()/math.pi))
     thida_neg = 1./ (10000 ** (torch.linspace(math.pi,0,int(48)).float()/math.pi))
     thida = torch.cat([-1*thida_neg,thida_pos],dim=-1)
+    
     tensor = (2*(torch.arange(96)-47.5)).unsqueeze(0)
     k_thida = torch.einsum("nm,k->nmk", tensor, thida)
     k_thida = k_thida.sin()
