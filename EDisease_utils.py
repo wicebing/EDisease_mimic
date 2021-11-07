@@ -73,13 +73,17 @@ def draw_spectrum():
     plt.savefig('./Spectrum_0_95sc.png')
 
 def draw_test():
-    thida_pos = 1./ (10000 ** (torch.linspace(0,math.pi,int(48)).float()/math.pi))
-    thida_neg = 1./ (10000 ** (torch.linspace(math.pi,0,int(48)).float()/math.pi))
-    thida = torch.cat([-1*thida_neg,thida_pos],dim=-1)
+    thida_pos = math.pi/ (10000 ** (torch.linspace(0,1,int(96)).float()/1))
+    # thida_neg = 1./ (10000 ** (torch.linspace(math.pi,0,int(48)).float()/math.pi))
+    # thida = torch.cat([-1*thida_neg,thida_pos],dim=-1)
     
-    tensor = (2*(torch.arange(96)-47.5)).unsqueeze(0)
-    k_thida = torch.einsum("nm,k->nmk", tensor, thida)
+    tensor = ((1/47.5)*(torch.arange(96)-47.5)).unsqueeze(0)
+    k_thida = torch.einsum("nm,k->nmk", tensor, thida_pos)
     k_thida = k_thida.sin()
+
+    # k_thida = torch.cat([k_thida.cos(),k_thida.sin()],dim=-1)
+
+
     
     fig = plt.figure(figsize=(48,48),dpi=100)
     
@@ -92,15 +96,21 @@ def draw_test():
         ax.axis('off')
         plt.title(f'{1*p-47.5:.2f}',fontsize=50)
         
-    plt.savefig('./Spectrum_test2.png')    
+    plt.savefig('./Spectrum_test_pi4.png')    
 
 def draw_spectrum_innerproduct():
-    thida_pos = 1./ (10000 ** (torch.linspace(0,math.pi,int(48)).float()/math.pi))
-    thida_neg = 1./ (10000 ** (torch.linspace(math.pi,0,int(48)).float()/math.pi))
-    thida = torch.cat([-1*thida_neg,thida_pos],dim=-1)
-    tensor = (1*(torch.arange(96)-47.5)).unsqueeze(0)
-    k_thida = torch.einsum("nm,k->nmk", tensor, thida)
+    thida_pos = math.pi/ (10000 ** (torch.linspace(0,1,int(96)).float()/1))
+    # thida_neg = 1./ (10000 ** (torch.linspace(math.pi,0,int(48)).float()/math.pi))
+    # thida = torch.cat([-1*thida_neg,thida_pos],dim=-1)
+    # tensor = (1*(torch.arange(96)-47.5)).unsqueeze(0)
+    # k_thida = torch.einsum("nm,k->nmk", tensor, thida)
+    # k_thida = k_thida.sin()
+    
+    tensor = ((1/47.5)*(torch.arange(96)-47.5)).unsqueeze(0)
+    k_thida = torch.einsum("nm,k->nmk", tensor, thida_pos)
     k_thida = k_thida.sin()
+
+    # k_thida = torch.cat([k_thida.cos(),k_thida.sin()],dim=-1)
     
     xlabels = list(5*(1*(torch.arange(20)-9.5)).numpy())
     
@@ -118,6 +128,6 @@ def draw_spectrum_innerproduct():
     ax.set_xticklabels(xlabels)
     ax.set_yticklabels(xlabels)
     # plt.xticks(rotation=60)
-    plt.savefig('./Spectrum_product.png')
+    plt.savefig('./Spectrum_product_pi3.png')
     
     
