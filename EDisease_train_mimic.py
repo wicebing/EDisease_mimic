@@ -1041,6 +1041,9 @@ if task=='train_mlp_ip':
 # ====
     train_mimics(EDisease_Model=EDisease_Model,
                  stc2emb=stc2emb,
+                 emb_emb=emb_emb,
+                 dim_model=dim_model,
+                 baseBERT=baseBERT,
                  dloader=DL_train_ip,
                  dloader_v=DL_valid_ip, 
                  lr=1e-5,
@@ -1185,6 +1188,9 @@ if task=='test_mlp_ip':
 # ====
     valres= testt_mimics(EDisease_Model,
                          stc2emb,
+                         emb_emb,
+                         dim_model,
+                         baseBERT,
                          DL_test_ip,
                          parallel=False,
                          gpus=gpus,
