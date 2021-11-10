@@ -82,7 +82,7 @@ class float2spectrum(nn.Module):
         
         # experimental 2 [transformer position token]
         # thida = math.pi/ (10000 ** torch.linspace(0,1,int(self.embedding_size),device=device).float())
-        thida = torch.linspace(0,math.pi,self.embedding_size).float()
+        thida = torch.linspace(0,math.pi,self.embedding_size,device=device).float()
         # thida_neg = 1./ (10000 ** (torch.linspace(math.pi,0,int(self.embedding_size/2),device=device).float()/math.pi))
         # thida = torch.cat([-1*thida_neg,thida_pos],dim=-1)
         k_thida = torch.einsum("nm,k->nmk", tensor, thida)
