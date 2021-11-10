@@ -79,7 +79,7 @@ def draw_test():
     # thida_neg = 1./ (10000 ** (torch.linspace(math.pi,0,int(48)).float()/math.pi))
     # thida = torch.cat([-1*thida_neg,thida_pos],dim=-1)
     
-    tensor = ((1/47.5)*(torch.arange(96)-47.5)).unsqueeze(0)
+    tensor = ((0.5/49.5)*(torch.arange(100)-49.5)).unsqueeze(0)
     k_thida = torch.einsum("nm,k->nmk", tensor, thida_pos)
     k_thida = k_thida.sin()
 
@@ -89,16 +89,16 @@ def draw_test():
     
     fig = plt.figure(figsize=(48,48),dpi=100)
     
-    for p in range(96):        
+    for p in range(100):        
         value =k_thida[0][p]
         xi = p%10
         yi = int(p/10)
         ax = plt.subplot2grid((10,10),(yi,xi))
         ax.plot(value)
         ax.axis('off')
-        plt.title(f'{1*p-47.5:.2f}',fontsize=50)
+        plt.title(f'{0.2*(p-49.5):.2f}',fontsize=50)
         
-    plt.savefig('./Spectrum_test_pi4.png')    
+    plt.savefig('./Spectrum_test_pi_final.png')    
 
 def draw_spectrum_innerproduct():
     # thida_pos = math.pi/ (10000 ** (torch.linspace(0,1,int(96)).float()/1))
@@ -116,7 +116,7 @@ def draw_spectrum_innerproduct():
 
     # k_thida = torch.cat([k_thida.cos(),k_thida.sin()],dim=-1)
     
-    xlabels = list(5*(1*(torch.arange(20)-9.5)).numpy())
+    xlabels = list((1*(torch.arange(20)-9.5)).numpy())
     
     kk = k_thida[0]
     ktn = torch.matmul(kk,kk.T).numpy()
@@ -127,11 +127,14 @@ def draw_spectrum_innerproduct():
 
     fig = plt.figure(figsize=(63,54),dpi=100)
     sns.set(font_scale = 12)
-    # sns.set_xticklabels(['2011','2012','2013','2014','2015','2016','2017','2018'])
     ax = sns.heatmap(ktn_clamp, linewidth=0.,alpha=.9)
+    
     ax.set_xticklabels(xlabels)
     ax.set_yticklabels(xlabels)
+    
+    # ax.set_xlabel("Δ")
+    # ax.set_ylabel("S")
     # plt.xticks(rotation=60)
-    plt.savefig('./Spectrum_product_pi4.png')
+    plt.savefig('./Spectrum_product_pi_final.png')
     
     
