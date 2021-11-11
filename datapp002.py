@@ -701,8 +701,11 @@ db_file_path = '../datahouse/mimic-iv-0.4'
 # labevents_merge_dropna_clean_combine = labevents_merge_dropna_clean.merge(b_lab_select,how='left',on=['itemid'])
 # labevents_merge_dropna_clean_combine.loc[:,['charttime']] = pd.to_datetime(labevents_merge_dropna_clean_combine['charttime'])
 
+# use_columns = ['subject_id', 'hadm_id', 'specimen_id', 
+#        'charttime', 'valuenum','b_idx', 'bb_idx']
+
 # filepath = os.path.join(db_file_path, 'data_EDis', 'labevents_merge_dropna_clean_combine.pdpkl')
-# labevents_merge_dropna_clean_combine.to_pickle(filepath)
+# labevents_merge_dropna_clean_combine[use_columns].to_pickle(filepath)
 
 # filepath = os.path.join(db_file_path, 'data_EDis', 'select_temp0.pdpkl')
 # icustays_select = pd.read_pickle(filepath)

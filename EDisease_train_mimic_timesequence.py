@@ -174,53 +174,6 @@ neg = trainset_temp[trainset_temp['los'] <=7]['hadm_id'].values
 ratio = len(neg) / len(pos)
 balance_train_set_hadmid = round(ratio)*list(pos)+list(neg)
 
-ds_train = dataloader.mimic_time_sequence_Dataset(set_hadmid=train_set_hadmid,
-                                    icustays_select=icustays_select_sort_dropduplicate,
-                                    agegender=agegender,
-                                    timesequence_vital_signs=chartevents_vs_dpna,
-                                    timesequence_lab=labevents_merge_dropna_clean_combine,
-                                    diagnoses_icd_merge_dropna=diagnoses_icd_merge_dropna,
-                                    tokanizer=BERT_tokenizer,
-                                    structurals_idx=structurals_idx_mean_std,
-                                    dsidx=balance_train_set_hadmid)
-
-ds_valid = dataloader.mimic_time_sequence_Dataset(set_hadmid=val_set_hadmid,
-                                    icustays_select=icustays_select_sort_dropduplicate,
-                                    agegender=agegender,
-                                    timesequence_vital_signs=chartevents_vs_dpna,
-                                    timesequence_lab=labevents_merge_dropna_clean_combine,
-                                    diagnoses_icd_merge_dropna=diagnoses_icd_merge_dropna,
-                                    tokanizer=BERT_tokenizer,
-                                    structurals_idx=structurals_idx_mean_std,
-                                    dsidx=None)
-
-ds_test  = dataloader.mimic_time_sequence_Dataset(set_hadmid=test_set_hadmid,
-                                    icustays_select=icustays_select_sort_dropduplicate,
-                                    agegender=agegender,
-                                    timesequence_vital_signs=chartevents_vs_dpna,
-                                    timesequence_lab=labevents_merge_dropna_clean_combine,
-                                    diagnoses_icd_merge_dropna=diagnoses_icd_merge_dropna,
-                                    tokanizer=BERT_tokenizer,
-                                    structurals_idx=structurals_idx_mean_std,
-                                    dsidx=None)
-
-DL_train = DataLoader(dataset = ds_train,
-                     shuffle = True,
-                     num_workers=1,
-                     batch_size=batch_size,
-                     collate_fn=dataloader.collate_fn_time_sequence)
-
-DL_valid = DataLoader(dataset = ds_valid,
-                     shuffle = False,
-                     num_workers=1,
-                     batch_size=batch_size,
-                     collate_fn=dataloader.collate_fn_time_sequence)
-
-DL_test = DataLoader(dataset = ds_test,
-                     shuffle = False,
-                     num_workers=1,
-                     batch_size=batch_size,
-                     collate_fn=dataloader.collate_fn_time_sequence)
     
 def train_mimics(EDisease_Model,
                  stc2emb,
@@ -500,6 +453,39 @@ if task=='train':
     except:
         print('*** No Pretrain_emb_emb ***')
 
+    ds_train = dataloader.mimic_time_sequence_Dataset(set_hadmid=train_set_hadmid,
+                                        icustays_select=icustays_select_sort_dropduplicate,
+                                        agegender=agegender,
+                                        timesequence_vital_signs=chartevents_vs_dpna,
+                                        timesequence_lab=labevents_merge_dropna_clean_combine,
+                                        diagnoses_icd_merge_dropna=diagnoses_icd_merge_dropna,
+                                        tokanizer=BERT_tokenizer,
+                                        structurals_idx=structurals_idx_mean_std,
+                                        dsidx=balance_train_set_hadmid)
+    
+    ds_valid = dataloader.mimic_time_sequence_Dataset(set_hadmid=val_set_hadmid,
+                                        icustays_select=icustays_select_sort_dropduplicate,
+                                        agegender=agegender,
+                                        timesequence_vital_signs=chartevents_vs_dpna,
+                                        timesequence_lab=labevents_merge_dropna_clean_combine,
+                                        diagnoses_icd_merge_dropna=diagnoses_icd_merge_dropna,
+                                        tokanizer=BERT_tokenizer,
+                                        structurals_idx=structurals_idx_mean_std,
+                                        dsidx=None)
+    
+    DL_train = DataLoader(dataset = ds_train,
+                         shuffle = True,
+                         num_workers=1,
+                         batch_size=batch_size,
+                         collate_fn=dataloader.collate_fn_time_sequence)
+    
+    DL_valid = DataLoader(dataset = ds_valid,
+                         shuffle = False,
+                         num_workers=1,
+                         batch_size=batch_size,
+                         collate_fn=dataloader.collate_fn_time_sequence)
+
+
 # ====
     train_mimics(EDisease_Model=EDisease_Model,
                  stc2emb=stc2emb,
@@ -563,6 +549,21 @@ if task=='test':
         emb_emb = load_checkpoint(checkpoint_file,'emb_emb_best.pth',emb_emb)
     except:
         print('*** No Pretrain_emb_emb ***')
+
+    ds_test  = dataloader.mimic_time_sequence_Dataset(set_hadmid=test_set_hadmid,
+                                        icustays_select=icustays_select_sort_dropduplicate,
+                                        agegender=agegender,
+                                        timesequence_vital_signs=chartevents_vs_dpna,
+                                        timesequence_lab=labevents_merge_dropna_clean_combine,
+                                        diagnoses_icd_merge_dropna=diagnoses_icd_merge_dropna,
+                                        tokanizer=BERT_tokenizer,
+                                        structurals_idx=structurals_idx_mean_std,
+                                        dsidx=None)
+    DL_test = DataLoader(dataset = ds_test,
+                         shuffle = False,
+                         num_workers=1,
+                         batch_size=batch_size,
+                         collate_fn=dataloader.collate_fn_time_sequence)
 
 # ====
     valres= testt_mimics(EDisease_Model,
