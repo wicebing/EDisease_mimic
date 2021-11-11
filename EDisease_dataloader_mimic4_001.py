@@ -177,3 +177,140 @@ def collate_fn(datas):
     batch['trg'] = torch.stack(trg)    
     return batch
 
+
+
+class mimic_time_sequence_Dataset(Dataset):
+    def __init__(self,
+                 set_hadmid,
+                 icustays_select,
+                 agegender,
+                 timesequence_vital_signs,
+                 timesequence_lab,
+                 diagnoses_icd_merge_dropna,
+                 tokanizer,
+                 train_set_lab_mean,
+                 train_set_lab_std,
+                 train_set_agegender_mean,
+                 train_set_agegender_std,
+                 train_set_vitalsign_mean,
+                 train_set_vitalsign_std,
+                 io_24_mean,
+                 io_24_std,
+                 structurals_idx,
+                 dsidx=None):
+       
+        self.set_hadmid = set_hadmid
+        self.icustays_select = icustays_select
+        self.agegender = agegender
+        self.timesequence_vital_signs = timesequence_vital_signs
+        self.timesequence_lab = timesequence_lab
+        self.diagnoses_icd_merge_dropna = diagnoses_icd_merge_dropna
+        self.tokanizer = tokanizer
+        
+        self.train_set_lab_mean = train_set_lab_mean
+        self.train_set_lab_std = train_set_lab_std
+        self.train_set_agegender_mean = train_set_agegender_mean
+        self.train_set_agegender_std = train_set_agegender_std
+        self.train_set_vitalsign_mean = train_set_vitalsign_mean
+        self.train_set_vitalsign_std = train_set_vitalsign_std
+        self.io_24_mean = io_24_mean
+        self.io_24_std = io_24_std
+        
+        self.structurals_idx = structurals_idx
+        
+        self.dsidx = dsidx
+        
+        if dsidx is None:
+            self.len = len(set_hadmid)
+        else:
+            self.len = len(dsidx)
+    
+    def __getitem__(self, index):
+        if self.dsidx is None:
+            hadm_id = self.set_hadmid[index]
+        else: 
+            hadm_id = self.dsidx[index]
+        
+        sample = self.icustays_select.loc[hadm_id]
+        subject_id = sample['subject_id']
+        stay_id = sample['stay_id']
+        intime = sample['intime']
+        
+        los = sample['los']
+        io24 = sample['io_24']
+        io_norm = (io24 - self.io_24_mean)/self.io_24_std
+
+        ag = self.agegender.loc[subject_id]
+        ag_norm = (ag - self.train_set_agegender_mean)/self.train_set_agegender_std
+
+        # time sequence lab & vital sitn        
+        vs = self.vital_signs.loc[stay_id]
+        vs_norm = (vs - self.train_set_vitalsign_mean)/self.train_set_vitalsign_std
+        
+        lab =self.hadmid_first_lab.loc[hadm_id]
+        lab_norm =(lab-self.train_set_lab_mean)/self.train_set_lab_std
+        
+        labevents_merge_dropna_clean_combine = self.timesequence_lab
+        temp = labevents_merge_dropna_clean_combine[labevents_merge_dropna_clean_combine['hadm_id']==hadm_id]
+        temp = temp.sort_values(by=['charttime'])
+        # temp_first = temp.drop_duplicates(keep='first',subset=['bb_idx'])
+          
+        temp_filter_24 = (temp['charttime'] - intime) < datetime.timedelta(minutes=1440)
+        temp_24 = temp[temp_filter_24]
+        temp_24['time'] = (temp_24['charttime'] - intime)
+        temp_24['time_day'] = temp_24['time'].dt.total_seconds()/(60*60*24)
+        
+        temp_select = temp_24[['bb_idx','valuenum','time_day']]
+        
+        
+        temp_vital_sign = pd.DataFrame(column_lab,index=column_lab,columns=['bb_idx'])
+        
+        # time sequence lab & vital sitn  
+        
+        structural_norm = pd.concat([ag_norm,vs_norm,lab_norm,io_norm],axis=0)
+        self.structurals_idx['value'] = structural_norm
+        
+        self.structurals_idx['missing_value'] = (~self.structurals_idx['value'].isna()).astype(int)
+        
+        # for mean imputation
+        self.structurals_idx = self.structurals_idx.fillna(0)
+        
+        # text data
+        diagnoses_icd = self.diagnoses_icd_merge_dropna[self.diagnoses_icd_merge_dropna['hadm_id']==hadm_id]
+        
+        icd_n = len(diagnoses_icd)
+                
+        hx_token_ids = []
+        hx_token_ids.append(torch.tensor([101,0,0,0,0],dtype=torch.float32))
+        
+        for i in range(icd_n):
+            h = diagnoses_icd.iloc[i]['long_title']
+            hx_tokens = self.tokanizer.tokenize(h)
+            
+            # add BERT cls head
+            hx_tokens = [self.tokanizer.cls_token, *hx_tokens]
+            hx_tokens = hx_tokens[:512]
+            hx_token_ids_ = self.tokanizer.convert_tokens_to_ids(hx_tokens)
+            hx_token_ids.append(torch.tensor(hx_token_ids_,dtype=torch.float32))
+        
+
+            
+        structure_tensor = torch.tensor(self.structurals_idx['value'],dtype=torch.float32)
+        structure_attention_mask_tensor = torch.tensor(self.structurals_idx['missing_value'],dtype=torch.long)
+        structure_position_ids_tensor = torch.tensor(self.structurals_idx['s_idx'],dtype=torch.long)
+        
+        trg = los
+        trg_tensor = torch.tensor(los,dtype=torch.float32)
+
+        
+        datas = {'structure': structure_tensor,
+                 'structure_attention_mask': structure_attention_mask_tensor,
+                 'structure_position_ids': structure_position_ids_tensor,
+                 'hx': hx_token_ids,
+                 'trg':trg_tensor,
+                 }
+          
+        return datas
+    
+    def __len__(self):
+        return self.len

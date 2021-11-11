@@ -136,5 +136,66 @@ def draw_spectrum_innerproduct():
     # ax.set_ylabel("S")
     # plt.xticks(rotation=60)
     plt.savefig('./Spectrum_product_pi_final.png')
+
+def draw_time():
+    # thida_pos = math.pi/ (10000 ** (torch.linspace(0,1,int(96)).float()/1))
+    thida_pos =  torch.linspace(0,math.pi,int(96)).float()
+
+    # thida_neg = 1./ (10000 ** (torch.linspace(math.pi,0,int(48)).float()/math.pi))
+    # thida = torch.cat([-1*thida_neg,thida_pos],dim=-1)
     
+    tensor = 0.5*(torch.arange(100)/100).unsqueeze(0)
+    k_thida = torch.einsum("nm,k->nmk", tensor, thida_pos)
+    k_thida = k_thida.cos()
+
+    # k_thida = torch.cat([k_thida.cos(),k_thida.sin()],dim=-1)
+  
+    fig = plt.figure(figsize=(48,48),dpi=100)
     
+    for p in range(100):        
+        value =k_thida[0][p]
+        xi = p%10
+        yi = int(p/10)
+        ax = plt.subplot2grid((10,10),(yi,xi))
+        ax.plot(value)
+        ax.axis('off')
+        plt.title(f'{p:.1f}',fontsize=50)
+        
+    plt.savefig('./Spectrum_time_pi_final.png')  
+    
+def draw_spectrum_time_innerproduct():
+    # thida_pos = math.pi/ (10000 ** (torch.linspace(0,1,int(96)).float()/1))
+    thida_pos =  torch.linspace(0,math.pi,int(96)).float()
+
+    # thida_neg = 1./ (10000 ** (torch.linspace(math.pi,0,int(48)).float()/math.pi))
+    # thida = torch.cat([-1*thida_neg,thida_pos],dim=-1)
+    # tensor = (1*(torch.arange(96)-47.5)).unsqueeze(0)
+    # k_thida = torch.einsum("nm,k->nmk", tensor, thida)
+    # k_thida = k_thida.sin()
+    
+    tensor = 0.5*(torch.arange(96)/96).unsqueeze(0)
+    k_thida = torch.einsum("nm,k->nmk", tensor, thida_pos)
+    k_thida = k_thida.cos()
+
+    # k_thida = torch.cat([k_thida.cos(),k_thida.sin()],dim=-1)
+    
+    xlabels = list((5*(torch.arange(20))).numpy())
+    
+    kk = k_thida[0]
+    ktn = torch.matmul(kk,kk.T).numpy()
+    # ktn = (kt -kt.mean())/kt.std()
+ 
+    ktn_clamp = (ktn-ktn.min())
+    ktn_clamp /= ktn_clamp.max()
+
+    fig = plt.figure(figsize=(63,54),dpi=100)
+    sns.set(font_scale = 12)
+    ax = sns.heatmap(ktn_clamp, linewidth=0.,alpha=.9)
+    
+    ax.set_xticklabels(xlabels)
+    ax.set_yticklabels(xlabels)
+    
+    # ax.set_xlabel("Δ")
+    # ax.set_ylabel("S")
+    # plt.xticks(rotation=60)
+    plt.savefig('./Spectrum_product_time_pi_final.png')    
