@@ -133,7 +133,7 @@ icustays_select_sort_dropduplicate = icustays_select_sort_dropduplicate.set_inde
 
 structurals = [*agegender_keys,*vital_signs_keys,*hadmid_first_lab_keys,*io_24_keys]
 structurals_idx = pd.DataFrame(structurals,index=structurals)
-structurals_idx.columns = ['name']
+structurals_idx.columns = ['bb_idx']
 structurals_idx['s_idx'] = 10+np.arange(len(structurals))
 
 # combime the idx with mean std
@@ -206,21 +206,21 @@ ds_test  = dataloader.mimic_time_sequence_Dataset(set_hadmid=test_set_hadmid,
 
 DL_train = DataLoader(dataset = ds_train,
                      shuffle = True,
-                     num_workers=2,
+                     num_workers=1,
                      batch_size=batch_size,
-                     collate_fn=dataloader.collate_fn)
+                     collate_fn=dataloader.collate_fn_time_sequence)
 
 DL_valid = DataLoader(dataset = ds_valid,
                      shuffle = False,
-                     num_workers=2,
+                     num_workers=1,
                      batch_size=batch_size,
-                     collate_fn=dataloader.collate_fn)
+                     collate_fn=dataloader.collate_fn_time_sequence)
 
 DL_test = DataLoader(dataset = ds_test,
                      shuffle = False,
-                     num_workers=2,
+                     num_workers=1,
                      batch_size=batch_size,
-                     collate_fn=dataloader.collate_fn)
+                     collate_fn=dataloader.collate_fn_time_sequence)
     
 def train_mimics(EDisease_Model,
                  stc2emb,
