@@ -475,13 +475,13 @@ if task=='train':
     
     DL_train = DataLoader(dataset = ds_train,
                          shuffle = True,
-                         num_workers=4,
+                         num_workers=2,
                          batch_size=batch_size,
                          collate_fn=dataloader.collate_fn_time_sequence)
     
     DL_valid = DataLoader(dataset = ds_valid,
                          shuffle = False,
-                         num_workers=4,
+                         num_workers=2,
                          batch_size=batch_size,
                          collate_fn=dataloader.collate_fn_time_sequence)
 
@@ -561,7 +561,7 @@ if task=='test':
                                         dsidx=None)
     DL_test = DataLoader(dataset = ds_test,
                          shuffle = False,
-                         num_workers=4,
+                         num_workers=2,
                          batch_size=batch_size,
                          collate_fn=dataloader.collate_fn_time_sequence)
 

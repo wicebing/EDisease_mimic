@@ -236,8 +236,8 @@ class mimic_time_sequence_Dataset(Dataset):
         t_idx = temp_select[temp_select['time_day']<0].index
         temp_select.loc[t_idx,['time_day']] = 0
         
-        if len(temp_select)>1000:
-            temp_select = temp_select.iloc[:1000]
+        if len(temp_select)>500:
+            temp_select = temp_select.iloc[:500]
  
         # add io
         temp_select = temp_select.append(pd.DataFrame([['io_24',io24,1.,]],columns=temp_select.columns))
