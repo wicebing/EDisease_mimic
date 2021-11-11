@@ -189,7 +189,8 @@ class mimic_time_sequence_Dataset(Dataset):
                  diagnoses_icd_merge_dropna,
                  tokanizer,
                  structurals_idx,
-                 dsidx=None):
+                 dsidx=None,
+                 test=False):
        
         self.set_hadmid = set_hadmid
         self.icustays_select = icustays_select
@@ -199,6 +200,7 @@ class mimic_time_sequence_Dataset(Dataset):
         self.diagnoses_icd_merge_dropna = diagnoses_icd_merge_dropna
         self.tokanizer = tokanizer            
         self.structurals_idx = structurals_idx
+        self.test = test
         
         self.dsidx = dsidx
         
@@ -236,8 +238,9 @@ class mimic_time_sequence_Dataset(Dataset):
         t_idx = temp_select[temp_select['time_day']<0].index
         temp_select.loc[t_idx,['time_day']] = 0
         
-        if len(temp_select)>500:
-            temp_select = temp_select.iloc[:500]
+        if len(temp_select)>256:
+            random_state = 1 if self.test else None
+            temp_select = temp_select.sample(n=255, random_state=random_state)
  
         # add io
         temp_select = temp_select.append(pd.DataFrame([['io_24',io24,1.,]],columns=temp_select.columns))

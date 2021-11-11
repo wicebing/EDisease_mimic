@@ -40,7 +40,7 @@ try:
 except:
     name = None
 
-batch_size = 128
+batch_size = 32
 
 parallel = False
 
@@ -461,7 +461,8 @@ if task=='train':
                                         diagnoses_icd_merge_dropna=diagnoses_icd_merge_dropna,
                                         tokanizer=BERT_tokenizer,
                                         structurals_idx=structurals_idx_mean_std,
-                                        dsidx=balance_train_set_hadmid)
+                                        dsidx=balance_train_set_hadmid,
+                                        test=False)
     
     ds_valid = dataloader.mimic_time_sequence_Dataset(set_hadmid=val_set_hadmid,
                                         icustays_select=icustays_select_sort_dropduplicate,
@@ -471,17 +472,18 @@ if task=='train':
                                         diagnoses_icd_merge_dropna=diagnoses_icd_merge_dropna,
                                         tokanizer=BERT_tokenizer,
                                         structurals_idx=structurals_idx_mean_std,
-                                        dsidx=None)
+                                        dsidx=None,
+                                        test=True)
     
     DL_train = DataLoader(dataset = ds_train,
                          shuffle = True,
-                         num_workers=2,
+                         num_workers=4,
                          batch_size=batch_size,
                          collate_fn=dataloader.collate_fn_time_sequence)
     
     DL_valid = DataLoader(dataset = ds_valid,
                          shuffle = False,
-                         num_workers=2,
+                         num_workers=4,
                          batch_size=batch_size,
                          collate_fn=dataloader.collate_fn_time_sequence)
 
@@ -558,10 +560,11 @@ if task=='test':
                                         diagnoses_icd_merge_dropna=diagnoses_icd_merge_dropna,
                                         tokanizer=BERT_tokenizer,
                                         structurals_idx=structurals_idx_mean_std,
-                                        dsidx=None)
+                                        dsidx=None,
+                                        test=True)
     DL_test = DataLoader(dataset = ds_test,
                          shuffle = False,
-                         num_workers=2,
+                         num_workers=4,
                          batch_size=batch_size,
                          collate_fn=dataloader.collate_fn_time_sequence)
 
