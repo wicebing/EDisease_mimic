@@ -341,12 +341,12 @@ def train_mimics(EDisease_Model,
                 print(e)
             
             pd_total_auc = pd.DataFrame(auc_record)
-            pd_total_auc.to_csv(f'./loss_record/total_auc_s_{s_type}_{name}.csv', sep = ',')
+            pd_total_auc.to_csv(f'./loss_record/total_auc_s_TS_{s_type}_{name}.csv', sep = ',')
         
         print('++ Ep Time: {:.1f} Secs ++'.format(time.time()-t0)) 
         total_loss.append(float(epoch_loss/epoch_cases))
         pd_total_loss = pd.DataFrame(total_loss)
-        pd_total_loss.to_csv(f'./loss_record/total_loss_s_{s_type}_{name}.csv', sep = ',')
+        pd_total_loss.to_csv(f'./loss_record/total_loss_s_TS_{s_type}_{name}.csv', sep = ',')
     print(total_loss) 
 
 
@@ -410,7 +410,7 @@ if task=='train':
     device = f'cuda:{gpus}'
     
     mlp = False
-    checkpoint_file = '../checkpoint_EDs_OnlyS/EDisease_spectrum_flat'
+    checkpoint_file = '../checkpoint_EDs_OnlyS/EDisease_spectrum_TS'
     if not os.path.isdir(checkpoint_file):
         os.makedirs(checkpoint_file)
         print(f' make dir {checkpoint_file}')
@@ -475,13 +475,13 @@ if task=='train':
     
     DL_train = DataLoader(dataset = ds_train,
                          shuffle = True,
-                         num_workers=1,
+                         num_workers=4,
                          batch_size=batch_size,
                          collate_fn=dataloader.collate_fn_time_sequence)
     
     DL_valid = DataLoader(dataset = ds_valid,
                          shuffle = False,
-                         num_workers=1,
+                         num_workers=4,
                          batch_size=batch_size,
                          collate_fn=dataloader.collate_fn_time_sequence)
 
@@ -507,7 +507,7 @@ if task=='test':
     device = f'cuda:{gpus}'
     
     mlp = False
-    checkpoint_file = '../checkpoint_EDs_OnlyS/EDisease_spectrum_flat'
+    checkpoint_file = '../checkpoint_EDs_OnlyS/EDisease_spectrum_TS'
     if not os.path.isdir(checkpoint_file):
         os.makedirs(checkpoint_file)
         print(f' make dir {checkpoint_file}')
@@ -561,7 +561,7 @@ if task=='test':
                                         dsidx=None)
     DL_test = DataLoader(dataset = ds_test,
                          shuffle = False,
-                         num_workers=1,
+                         num_workers=4,
                          batch_size=batch_size,
                          collate_fn=dataloader.collate_fn_time_sequence)
 
@@ -577,209 +577,4 @@ if task=='test':
     
     roc_auc = auc(fpr,tpr)
     
-    valres.to_pickle(f'./result_pickles/EDspectrumFlat_OnlyS_{roc_auc*1000:.0f}.pkl')
-
-    print(f'auc: {roc_auc:.3f}')
-    
-    only_dx = True if name=='only_dx' else False
-    print(f' =========== name = {name}; only_dx = {only_dx}============')
-    
-    device = f'cuda:{gpus}'
-    
-    mlp = True
-    checkpoint_file = f'../checkpoint_EDs_OnlyS/EDisease_spectrum_flat_oldstr2emb_{name}'
-    if not os.path.isdir(checkpoint_file):
-        os.makedirs(checkpoint_file)
-        print(f' make dir {checkpoint_file}')
-
-    EDisease_Model = ED_model.EDisease_Model(T_config=T_config,
-                                             S_config=S_config
-                                             )
-
-    stc2emb = ED_model.structure_emb_mlp(S_config)
-    emb_emb = ED_model.emb_emb(T_config)
-
-    dim_model = ED_model.DIM(T_config=T_config,
-                              alpha=alpha,
-                              beta=beta,
-                              gamma=gamma)
-    
-    try: 
-        EDisease_Model = load_checkpoint(checkpoint_file,'EDisease_Model_best.pth',EDisease_Model)
-        print(' ** Complete Load CLS EDisease Model ** ')
-    except:
-        print('*** No Pretrain_EDisease_CLS_Model ***')
-
-    try:     
-        dim_model = load_checkpoint(checkpoint_file,'dim_model_best.pth',dim_model)
-    except:
-        print('*** No Pretrain_dim_model ***')
-
-    try:     
-        stc2emb = load_checkpoint(checkpoint_file,'stc2emb_best.pth',stc2emb)
-    except:
-        print('*** No Pretrain_stc2emb ***')
-
-    try:     
-        emb_emb = load_checkpoint(checkpoint_file,'emb_emb_best.pth',emb_emb)
-    except:
-        print('*** No Pretrain_emb_emb ***')
-
-# ====
-    valres= testt_mimics(EDisease_Model,
-                         stc2emb,
-                         DL_test,
-                         parallel=False,
-                         gpus=gpus,
-                         device=device,
-                         )               
-
-    fpr, tpr, _ = roc_curve(valres['ground_truth'].values, valres['probability'].values)
-    
-    roc_auc = auc(fpr,tpr)
-    
-    valres.to_pickle(f'./result_pickles/EDmlpFlat_OnlyS_{name}_{roc_auc*1000:.0f}.pkl')
-
-    print(f'auc: {roc_auc:.3f}')
-        
-
-    print(f' =========== imputation name = {name} ============')
-    filepath = os.path.join(db_file_path, 'data_EDis_imputation', f'stayid_first_vitalsign_{name}.pdpkl')
-    vital_signs_ip = pd.read_pickle(filepath)
-    
-    filepath = os.path.join(db_file_path, 'data_EDis_imputation', f'hadmid_first_lab_{name}.pdpkl')
-    hadmid_first_lab_ip = pd.read_pickle(filepath)
-    
-    ds_train_ip = dataloader.mimic_Dataset(set_hadmid=train_set_hadmid,
-                                        icustays_select=icustays_select_sort_dropduplicate,
-                                        agegender=agegender,
-                                        vital_signs=vital_signs_ip,
-                                        hadmid_first_lab=hadmid_first_lab_ip,
-                                        diagnoses_icd_merge_dropna=diagnoses_icd_merge_dropna,
-                                        tokanizer=BERT_tokenizer,
-                                        train_set_lab_mean=train_set_lab_mean,
-                                        train_set_lab_std=train_set_lab_std,
-                                        train_set_agegender_mean=train_set_agegender_mean,
-                                        train_set_agegender_std=train_set_agegender_std,
-                                        train_set_vitalsign_mean=train_set_vitalsign_mean,
-                                        train_set_vitalsign_std=train_set_vitalsign_std,
-                                        io_24_mean=io_24_mean,
-                                        io_24_std=io_24_std,
-                                        structurals_idx=structurals_idx,
-                                        dsidx=balance_train_set_hadmid)
-    
-    ds_valid_ip = dataloader.mimic_Dataset(set_hadmid=val_set_hadmid,
-                                        icustays_select=icustays_select_sort_dropduplicate,
-                                        agegender=agegender,
-                                        vital_signs=vital_signs_ip,
-                                        hadmid_first_lab=hadmid_first_lab_ip,
-                                        diagnoses_icd_merge_dropna=diagnoses_icd_merge_dropna,
-                                        tokanizer=BERT_tokenizer,
-                                        train_set_lab_mean=train_set_lab_mean,
-                                        train_set_lab_std=train_set_lab_std,
-                                        train_set_agegender_mean=train_set_agegender_mean,
-                                        train_set_agegender_std=train_set_agegender_std,
-                                        train_set_vitalsign_mean=train_set_vitalsign_mean,
-                                        train_set_vitalsign_std=train_set_vitalsign_std,
-                                        io_24_mean=io_24_mean,
-                                        io_24_std=io_24_std,
-                                        structurals_idx=structurals_idx,
-                                        dsidx=None)
-    
-    ds_test_ip  = dataloader.mimic_Dataset(set_hadmid=test_set_hadmid,
-                                        icustays_select=icustays_select_sort_dropduplicate,
-                                        agegender=agegender,
-                                        vital_signs=vital_signs_ip,
-                                        hadmid_first_lab=hadmid_first_lab_ip,
-                                        diagnoses_icd_merge_dropna=diagnoses_icd_merge_dropna,
-                                        tokanizer=BERT_tokenizer,
-                                        train_set_lab_mean=train_set_lab_mean,
-                                        train_set_lab_std=train_set_lab_std,
-                                        train_set_agegender_mean=train_set_agegender_mean,
-                                        train_set_agegender_std=train_set_agegender_std,
-                                        train_set_vitalsign_mean=train_set_vitalsign_mean,
-                                        train_set_vitalsign_std=train_set_vitalsign_std,
-                                        io_24_mean=io_24_mean,
-                                        io_24_std=io_24_std,
-                                        structurals_idx=structurals_idx,
-                                        dsidx=None)
-
-    DL_train_ip = DataLoader(dataset = ds_train_ip,
-                         shuffle = True,
-                         num_workers=4,
-                         batch_size=batch_size,
-                         collate_fn=dataloader.collate_fn)
-    
-    DL_valid_ip = DataLoader(dataset = ds_valid_ip,
-                         shuffle = False,
-                         num_workers=4,
-                         batch_size=batch_size,
-                         collate_fn=dataloader.collate_fn)
-    
-    DL_test_ip = DataLoader(dataset = ds_test_ip,
-                         shuffle = False,
-                         num_workers=4,
-                         batch_size=batch_size,
-                         collate_fn=dataloader.collate_fn)
-    
-    device = f'cuda:{gpus}'
-    
-    mlp = True
-    checkpoint_file = f'../checkpoint_EDs_OnlyS/EDisease_spectrum_flat_oldstr2emb_{name}'
-    if not os.path.isdir(checkpoint_file):
-        os.makedirs(checkpoint_file)
-        print(f' make dir {checkpoint_file}')
-
-    EDisease_Model = ED_model.EDisease_Model(T_config=T_config,
-                                             S_config=S_config
-                                             )
-
-    stc2emb = ED_model.structure_emb_mlp(S_config)
-    emb_emb = ED_model.emb_emb(T_config)
-
-    dim_model = ED_model.DIM(T_config=T_config,
-                              alpha=alpha,
-                              beta=beta,
-                              gamma=gamma)
-    
-    print('dim_model PARAMETERS: ' ,count_parameters(dim_model))
-    print('emb_emb PARAMETERS: ' ,count_parameters(emb_emb))
-    print('stc2emb PARAMETERS: ' ,count_parameters(stc2emb))
-    print('EDisease_Model PARAMETERS: ' ,count_parameters(EDisease_Model))
-    
-    try: 
-        EDisease_Model = load_checkpoint(checkpoint_file,'EDisease_Model_best.pth',EDisease_Model)
-        print(' ** Complete Load CLS EDisease Model ** ')
-    except:
-        print('*** No Pretrain_EDisease_CLS_Model ***')
-
-    try:     
-        dim_model = load_checkpoint(checkpoint_file,'dim_model_best.pth',dim_model)
-    except:
-        print('*** No Pretrain_dim_model ***')
-
-    try:     
-        stc2emb = load_checkpoint(checkpoint_file,'stc2emb_best.pth',stc2emb)
-    except:
-        print('*** No Pretrain_stc2emb ***')
-
-    try:     
-        emb_emb = load_checkpoint(checkpoint_file,'emb_emb_best.pth',emb_emb)
-    except:
-        print('*** No Pretrain_emb_emb ***')
-
-# ====
-    valres= testt_mimics(EDisease_Model,
-                         stc2emb,
-                         DL_test_ip,
-                         parallel=False,
-                         gpus=gpus,
-                         device=device)               
-
-    fpr, tpr, _ = roc_curve(valres['ground_truth'].values, valres['probability'].values)
-    
-    roc_auc = auc(fpr,tpr)
-    
-    valres.to_pickle(f'./result_pickles/EDmlpFlat_OnlyS_{name}_{roc_auc*1000:.0f}.pkl')
-
-    print(f'auc: {roc_auc:.3f}')
+    valres.to_pickle(f'./result_pickles/EDspectrumTS_OnlyS_{roc_auc*1000:.0f}.pkl')

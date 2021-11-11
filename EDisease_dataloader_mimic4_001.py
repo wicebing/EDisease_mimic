@@ -197,8 +197,7 @@ class mimic_time_sequence_Dataset(Dataset):
         self.timesequence_vital_signs = timesequence_vital_signs
         self.timesequence_lab = timesequence_lab
         self.diagnoses_icd_merge_dropna = diagnoses_icd_merge_dropna
-        self.tokanizer = tokanizer
-              
+        self.tokanizer = tokanizer            
         self.structurals_idx = structurals_idx
         
         self.dsidx = dsidx
@@ -220,19 +219,9 @@ class mimic_time_sequence_Dataset(Dataset):
         intime = sample['intime']
         
         los = sample['los']
+        
         io24 = sample['io_24']
-        io_norm = (io24 - self.io_24_mean)/self.io_24_std
-
-        ag = self.agegender.loc[subject_id]
-        ag_norm = (ag - self.train_set_agegender_mean)/self.train_set_agegender_std
-
-        # time sequence lab & vital sitn        
-        vs = self.vital_signs.loc[stay_id]
-        vs_norm = (vs - self.train_set_vitalsign_mean)/self.train_set_vitalsign_std
-        
-        lab =self.hadmid_first_lab.loc[hadm_id]
-        lab_norm =(lab-self.train_set_lab_mean)/self.train_set_lab_std
-        
+       
         labevents_merge_dropna_clean_combine = self.timesequence_lab
         temp = labevents_merge_dropna_clean_combine[labevents_merge_dropna_clean_combine['hadm_id']==hadm_id]
         temp = temp.sort_values(by=['charttime'])
@@ -247,10 +236,18 @@ class mimic_time_sequence_Dataset(Dataset):
         t_idx = temp_select[temp_select['time_day']<0].index
         temp_select.loc[t_idx,['time_day']] = 0
         
+        if len(temp_select)>1000:
+            temp_select = temp_select.iloc[:1000]
+ 
+        # add io
+        temp_select = temp_select.append(pd.DataFrame([['io_24',io24,1.,]],columns=temp_select.columns))
+        
         temp_select_idx_m_s = temp_select.merge(self.structurals_idx,how='left',on='bb_idx')
         
         temp_select_idx_m_s['n_value'] = (temp_select_idx_m_s['valuenum']-temp_select_idx_m_s['mean'])/temp_select_idx_m_s['std']
-        
+
+
+
         temp_select_idx_m_s['missing_value'] = (~temp_select_idx_m_s['n_value'].isna()).astype(int)
         
         temp_select_idx_m_s = temp_select_idx_m_s.fillna(0)
