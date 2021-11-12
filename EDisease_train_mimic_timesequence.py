@@ -64,8 +64,8 @@ print('baseBERT PARAMETERS: ' ,count_parameters(baseBERT))
 db_file_path = '../datahouse/mimic-iv-0.4'
 
 # timesequence vitalsign
-filepath = os.path.join(db_file_path, 'data_EDis', 'chartevents_vitalsisn_clean.pdpkl')
-chartevents_vs_dpna = pd.read_pickle(filepath)
+filepath = os.path.join(db_file_path, 'data_EDis', 'stayid_vitalsign_TS.pdpkl')
+stayid_vitalsign_TS = pd.read_pickle(filepath)
 
 # timesequence lab
 filepath = os.path.join(db_file_path, 'data_EDis', 'labevents_merge_dropna_clean_combine.pdpkl')
@@ -456,7 +456,7 @@ if task=='train':
     ds_train = dataloader.mimic_time_sequence_Dataset(set_hadmid=train_set_hadmid,
                                         icustays_select=icustays_select_sort_dropduplicate,
                                         agegender=agegender,
-                                        timesequence_vital_signs=chartevents_vs_dpna,
+                                        timesequence_vital_signs=stayid_vitalsign_TS,
                                         timesequence_lab=labevents_merge_dropna_clean_combine,
                                         diagnoses_icd_merge_dropna=diagnoses_icd_merge_dropna,
                                         tokanizer=BERT_tokenizer,
@@ -467,7 +467,7 @@ if task=='train':
     ds_valid = dataloader.mimic_time_sequence_Dataset(set_hadmid=val_set_hadmid,
                                         icustays_select=icustays_select_sort_dropduplicate,
                                         agegender=agegender,
-                                        timesequence_vital_signs=chartevents_vs_dpna,
+                                        timesequence_vital_signs=stayid_vitalsign_TS,
                                         timesequence_lab=labevents_merge_dropna_clean_combine,
                                         diagnoses_icd_merge_dropna=diagnoses_icd_merge_dropna,
                                         tokanizer=BERT_tokenizer,
@@ -555,7 +555,7 @@ if task=='test':
     ds_test  = dataloader.mimic_time_sequence_Dataset(set_hadmid=test_set_hadmid,
                                         icustays_select=icustays_select_sort_dropduplicate,
                                         agegender=agegender,
-                                        timesequence_vital_signs=chartevents_vs_dpna,
+                                        timesequence_vital_signs=stayid_vitalsign_TS,
                                         timesequence_lab=labevents_merge_dropna_clean_combine,
                                         diagnoses_icd_merge_dropna=diagnoses_icd_merge_dropna,
                                         tokanizer=BERT_tokenizer,

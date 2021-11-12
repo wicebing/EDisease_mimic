@@ -223,38 +223,61 @@ class mimic_time_sequence_Dataset(Dataset):
         los = sample['los']
         
         io24 = sample['io_24']
-       
+        
+        # add lab
         labevents_merge_dropna_clean_combine = self.timesequence_lab
-        temp = labevents_merge_dropna_clean_combine[labevents_merge_dropna_clean_combine['hadm_id']==hadm_id]
-        temp = temp.sort_values(by=['charttime'])
-        # temp_first = temp.drop_duplicates(keep='first',subset=['bb_idx'])
+        temp_lab = labevents_merge_dropna_clean_combine[labevents_merge_dropna_clean_combine['hadm_id']==hadm_id]
+        temp_lab = temp_lab.sort_values(by=['charttime'])
           
-        temp_filter_24 = (temp['charttime'] - intime) < datetime.timedelta(minutes=1440)
-        temp_24 = temp[temp_filter_24]
-        temp_24['time'] = (temp_24['charttime'] - intime)
-        temp_24['time_day'] = temp_24['time'].dt.total_seconds()/(60*60*24)
+        temp_filter_lab_24 = (temp_lab['charttime'] - intime) < datetime.timedelta(minutes=1440)
+        temp_lab_24 = temp_lab[temp_filter_lab_24]
+        temp_lab_24['time'] = (temp_lab_24['charttime'] - intime)
+        temp_lab_24['time_day'] = temp_lab_24['time'].dt.total_seconds()/(60*60*24)
         
-        temp_select = temp_24[['bb_idx','valuenum','time_day']]
-        t_idx = temp_select[temp_select['time_day']<0].index
-        temp_select.loc[t_idx,['time_day']] = 0
+        temp_lab_select = temp_lab_24[['bb_idx','valuenum','time_day']]
+        t_idx = temp_lab_select[temp_lab_select['time_day']<0].index
+        temp_lab_select.loc[t_idx,['time_day']] = 0
         
-        if len(temp_select)>256:
+        if len(temp_lab_select)>100:
             random_state = 1 if self.test else None
-            temp_select = temp_select.sample(n=255, random_state=random_state)
+            temp_lab_select = temp_lab_select.sample(n=100, random_state=random_state)
  
+        # add vital sign
+        chartevents_vs_dpna = self.timesequence_vital_signs
+        temp_vs = chartevents_vs_dpna[chartevents_vs_dpna['stay_id']==stay_id]
+        temp_vs = temp_vs.sort_values(by=['charttime'])
+
+        temp_filter_vs_24 = (temp_vs['charttime'] - intime) < datetime.timedelta(minutes=1440)
+        temp_vs_24 = temp_vs[temp_filter_vs_24]
+        temp_vs_24['time'] = (temp_vs_24['charttime'] - intime)
+        temp_vs_24['time_day'] = temp_vs_24['time'].dt.total_seconds()/(60*60*24)
+
+        temp_vs_select = temp_vs_24[['bb_idx','valuenum','time_day']]
+        t_idx = temp_vs_select[temp_vs_select['time_day']<0].index
+        temp_vs_select.loc[t_idx,['time_day']] = 0
+
+        if len(temp_vs_select)>100:
+            random_state = 1 if self.test else None
+            temp_vs_select = temp_vs_select.sample(n=100, random_state=random_state)
+        
+        # combine_vs+lab
+        temp_select = pd.concat([temp_lab_select,temp_vs_select],axis=0,ignore_index=True)
+        
         # add io
         temp_select = temp_select.append(pd.DataFrame([['io_24',io24,1.,]],columns=temp_select.columns))
-        
+
+        # add age gender
+        ag = self.agegender.loc[subject_id]
+        temp_select = temp_select.append(pd.DataFrame([['AGE',ag.AGE,0.,]],columns=temp_select.columns))
+        temp_select = temp_select.append(pd.DataFrame([['SEX',ag.SEX,0.,]],columns=temp_select.columns))
+
+        # fillna with mask flag
         temp_select_idx_m_s = temp_select.merge(self.structurals_idx,how='left',on='bb_idx')
-        
         temp_select_idx_m_s['n_value'] = (temp_select_idx_m_s['valuenum']-temp_select_idx_m_s['mean'])/temp_select_idx_m_s['std']
 
-
-
         temp_select_idx_m_s['missing_value'] = (~temp_select_idx_m_s['n_value'].isna()).astype(int)
-        
         temp_select_idx_m_s = temp_select_idx_m_s.fillna(0)
-                
+        
         # time sequence lab & vital sitn  
         
         

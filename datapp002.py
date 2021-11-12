@@ -366,6 +366,33 @@ db_file_path = '../datahouse/mimic-iv-0.4'
 # filepath = os.path.join(db_file_path, 'data_EDis', 'stayid_first_vitalsign.pdpkl')
 # vital_signs.to_pickle(filepath)
 
+# =====================================================
+# step 3d: extract vital sign from chartevents_timesequence
+
+filepath = os.path.join(db_file_path, 'data_EDis', 'chartevents_vitalsisn_clean.pdpkl')
+chartevents_vs_dpna = pd.read_pickle(filepath)
+
+filepath = os.path.join(db_file_path, 'data_EDis', 'select_temp0.pdpkl')
+icustays_select = pd.read_pickle(filepath)
+
+b_idx = [0,1,2,3,4,5,6,7,8,9,10,11,12]
+bb_idx = ['SBP','DBP','HR','OXYGEN','RESPIRATION','BODYTEMPERATURE','BLOODSUGAR','HEIGHT','WEIGHT','GCSE','GCSV','GCSM','GCS']
+
+temp_b_idx = pd.DataFrame(b_idx,index=[0,1,2,3,4,5,6,7,8,9,10,11,12],columns=['b_idx'])
+temp_bb_idx = pd.DataFrame(bb_idx,index=[0,1,2,3,4,5,6,7,8,9,10,11,12],columns=['bb_idx'])
+
+temp_vs = pd.concat([temp_b_idx,temp_bb_idx],axis=1)
+
+sel = ['subject_id', 'hadm_id', 'stay_id', 'charttime', 'valuenum', 'b_idx']
+temp_select = chartevents_vs_dpna[sel]
+
+temp_select.loc[:,'b_idx'] = pd.to_numeric(temp_select.loc[:,'b_idx'])
+      
+temp_vital_sign = temp_select.merge(temp_vs,how='left',on=['b_idx'])
+
+filepath = os.path.join(db_file_path, 'data_EDis', 'stayid_vitalsign_TS.pdpkl')
+temp_vital_sign.to_pickle(filepath)
+
 # # =====================================================
 # # step 4: add age gender
 
