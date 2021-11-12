@@ -22,6 +22,11 @@ import EDisease_model_v001 as ED_model
 
 import EDisease_dataloader_mimic4_001 as dataloader
 
+import warnings
+from pandas.core.common import SettingWithCopyWarning
+warnings.simplefilter(action="ignore", category=SettingWithCopyWarning)
+
+
 try:
     task = sys.argv[1]
     print('*****task= ',task)
@@ -40,7 +45,7 @@ try:
 except:
     name = None
 
-batch_size = 32
+batch_size = 64
 
 parallel = False
 
@@ -231,6 +236,7 @@ def train_mimics(EDisease_Model,
 
             # for structual data
             s,sp, sm = sample['structure'],sample['structure_position_ids'], sample['structure_attention_mask']
+            st = sample['structure_time_ids']
             
             bs = len(s)
                   
@@ -243,7 +249,8 @@ def train_mimics(EDisease_Model,
             
             s_emb = stc2emb(inputs=s_noise,
                                  attention_mask=sm,
-                                 position_ids=sp)
+                                 position_ids=sp,
+                                 time_ids=st)
 
             
 

@@ -57,19 +57,13 @@ class float2spectrum(nn.Module):
         super(float2spectrum, self).__init__()
         self.embedding_size = embedding_size
         
-    def forward(self, tensor):
+    def forward(self, tensor, time=False):
         '''
         limitation: the cycle will happen in the embedding_size
         such as embedding_size =96
         the emb_x will be the same on 1 -> 96, 2-> 97, ...
         due to the minus exist the minmax must be the half of embedding_size to avoid aliasing effect 2x sample freq
         '''
-        
-        device = tensor.device
-        minmax = 0.5 #float(self.embedding_size)-1e-1
-        
-        tensor = tensor.clamp(min=-1*minmax,max=minmax)
-        
         # experimental 0 [cos x, sin x] auc 0.846
         # thida = torch.linspace(0,2*math.pi,int(self.embedding_size/2),device=device)
         # k_thida = torch.einsum("nm,k->nmk", tensor, thida)
@@ -82,11 +76,19 @@ class float2spectrum(nn.Module):
         
         # experimental 2 [transformer position token]
         # thida = math.pi/ (10000 ** torch.linspace(0,1,int(self.embedding_size),device=device).float())
-        thida = torch.linspace(0,math.pi,self.embedding_size,device=device).float()
         # thida_neg = 1./ (10000 ** (torch.linspace(math.pi,0,int(self.embedding_size/2),device=device).float()/math.pi))
         # thida = torch.cat([-1*thida_neg,thida_pos],dim=-1)
+        
+        device = tensor.device
+        minmax = 0.5
+        tensor = tensor.clamp(min=-1*minmax,max=minmax)
+        thida = torch.linspace(0,math.pi,self.embedding_size,device=device).float()
         k_thida = torch.einsum("nm,k->nmk", tensor, thida)
-        emb_x = k_thida.sin()
+        
+        if time:
+            emb_x = 0.1*k_thida.cos()
+        else:
+            emb_x = k_thida.sin()
         
         return emb_x        
 
@@ -106,9 +108,12 @@ class structure_emb(nn.Module):
         
         self.BERTmodel = BertModel(self.Config)
 
-    def forward(self, inputs,attention_mask,position_ids,token_type_ids=None):
-        inputs_embeds = self.float2emb(0.05*inputs) # to keep the 10x std data range
-        
+    def forward(self, inputs,attention_mask,position_ids,time_ids=None,token_type_ids=None):
+        if time_ids:
+            inputs_embeds = inputs_embeds = self.float2emb(0.05*inputs) + self.float2emb(0.1*time_ids,time=True)
+        else:
+            inputs_embeds = self.float2emb(0.05*inputs)
+            
         outputs = self.BERTmodel(inputs_embeds=inputs_embeds,
                                  attention_mask=attention_mask,
                                  position_ids=position_ids,
