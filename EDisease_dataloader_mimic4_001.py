@@ -238,9 +238,14 @@ class mimic_time_sequence_Dataset(Dataset):
         t_idx = temp_lab_select[temp_lab_select['time_day']<0].index
         temp_lab_select.loc[t_idx,['time_day']] = 0
         
-        if len(temp_lab_select)>100:
-            random_state = 1 if self.test else None
-            temp_lab_select = temp_lab_select.sample(n=100, random_state=random_state)
+        if self.test:
+            random_state = 1
+            if len(temp_lab_select)>500:
+                temp_lab_select = temp_lab_select.sample(n=500, random_state=random_state)
+        else:
+            random_state = None
+            if len(temp_lab_select)>100:
+                temp_lab_select = temp_lab_select.sample(n=100, random_state=random_state)
  
         # add vital sign
         chartevents_vs_dpna = self.timesequence_vital_signs
@@ -256,10 +261,15 @@ class mimic_time_sequence_Dataset(Dataset):
         t_idx = temp_vs_select[temp_vs_select['time_day']<0].index
         temp_vs_select.loc[t_idx,['time_day']] = 0
 
-        if len(temp_vs_select)>100:
-            random_state = 1 if self.test else None
-            temp_vs_select = temp_vs_select.sample(n=100, random_state=random_state)
-        
+        if self.test:
+            random_state = 1
+            if len(temp_lab_select)>500:
+                temp_vs_select = temp_vs_select.sample(n=500, random_state=random_state)
+        else:
+            random_state = None
+            if len(temp_lab_select)>100:
+                temp_vs_select = temp_vs_select.sample(n=100, random_state=random_state)
+       
         # combine_vs+lab
         temp_select = pd.concat([temp_lab_select,temp_vs_select],axis=0,ignore_index=True)
         

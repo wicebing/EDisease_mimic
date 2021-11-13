@@ -109,10 +109,10 @@ class structure_emb(nn.Module):
         self.BERTmodel = BertModel(self.Config)
 
     def forward(self, inputs,attention_mask,position_ids,time_ids=None,token_type_ids=None):
-        if time_ids:
-            inputs_embeds = inputs_embeds = self.float2emb(0.05*inputs) + self.float2emb(0.1*time_ids,time=True)
-        else:
+        if time_ids is None:
             inputs_embeds = self.float2emb(0.05*inputs)
+        else:
+            inputs_embeds = inputs_embeds = self.float2emb(0.05*inputs) + self.float2emb(0.1*time_ids,time=True)            
             
         outputs = self.BERTmodel(inputs_embeds=inputs_embeds,
                                  attention_mask=attention_mask,
