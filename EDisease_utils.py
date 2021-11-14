@@ -14,6 +14,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import DataLoader, Dataset
+import glob
+from math import sqrt
+from sklearn.metrics import roc_curve, auc, accuracy_score
 
 def count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)  
@@ -198,4 +201,73 @@ def draw_spectrum_time_innerproduct():
     # ax.set_xlabel("Δ")
     # ax.set_ylabel("S")
     # plt.xticks(rotation=60)
-    plt.savefig('./Spectrum_product_time_pi_final.png')    
+    plt.savefig('./Spectrum_product_time_pi_final.png')  
+
+
+
+
+def roc_auc_ci(y_true, y_score, AUC, positive=1):
+    '''
+    reference from https://gist.github.com/doraneko94/e24643136cfb8baf03ef8a314ab9615c
+    '''
+    
+    N1 = sum(y_true == positive)
+    N2 = sum(y_true != positive)
+    Q1 = AUC / (2 - AUC)
+    Q2 = 2*AUC**2 / (1 + AUC)
+    SE_AUC = sqrt((AUC*(1 - AUC) + (N1 - 1)*(Q1 - AUC**2) + (N2 - 1)*(Q2 - AUC**2)) / (N1*N2))
+    lower = AUC - 1.96*SE_AUC
+    upper = AUC + 1.96*SE_AUC
+    if lower < 0:
+        lower = 0
+    if upper > 1:
+        upper = 1
+    return f'AUC={AUC:.3f} ({lower:.3f}-{upper:.3f})'
+
+    
+def calculate_ci_auroc():
+    auc_path = './result_pickles'
+    auc_class = glob.glob(os.path.join(auc_path,'*'))
+    
+    ROC_threshold = torch.linspace(0,1,100).numpy()
+    
+    for auc_cls in auc_class:
+        auc_cls_name = os.path.basename(auc_cls)
+        auc_files = glob.glob(os.path.join(auc_cls,'*.pkl'))
+        auc_files.sort()
+        
+        fig = plt.figure(figsize=(6,6),dpi=200)
+        ax = fig.add_subplot(111)
+        
+        for auc_i in auc_files:
+            auc_name = os.path.basename(auc_i).split('.')[0]
+            
+            method = auc_name.split('_')[-2]
+            
+            auc_data = pd.read_pickle(auc_i)
+            
+            fpr, tpr, _ = roc_curve(auc_data['ground_truth'].values, auc_data['probability'].values)
+            
+            roc_auc = auc(fpr,tpr)
+            
+            auc_ci = roc_auc_ci(y_true = auc_data['ground_truth'].values, 
+                                y_score = auc_data['probability'].values,
+                                AUC = roc_auc)
+            
+            print(auc_cls_name,method, auc_ci)
+    
+            label_auc2 = f'{method}, {auc_ci}'        
+            ax.plot(fpr,tpr,label=label_auc2)
+            
+        # ax.plot(ROC_threshold,ROC_threshold,'-.',label='random')
+        ax.set_xlabel('1-specificity')
+        ax.set_ylabel('sensitivity')
+        ax.set_title(f'ROC curves - {auc_cls_name}')
+        plt.legend()
+        plt.xlim(0.,1.)
+        plt.ylim(0.,1.)
+        plt.legend()
+        plt.savefig(f'./pic_ROC/AUCs_{auc_cls_name}.png')    
+    
+    
+
