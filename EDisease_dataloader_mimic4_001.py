@@ -241,7 +241,7 @@ class mimic_time_sequence_Dataset(Dataset):
         if self.test:
             random_state = 1
             if len(temp_lab_select)>500:
-                temp_lab_select = temp_lab_select.sample(n=500, random_state=random_state)
+                temp_lab_select = temp_lab_select.sample(n=400, random_state=random_state)
         else:
             random_state = None
             if len(temp_lab_select)>100:
@@ -263,11 +263,11 @@ class mimic_time_sequence_Dataset(Dataset):
 
         if self.test:
             random_state = 1
-            if len(temp_lab_select)>500:
+            if len(temp_vs_select)>500:
                 temp_vs_select = temp_vs_select.sample(n=500, random_state=random_state)
         else:
             random_state = None
-            if len(temp_lab_select)>100:
+            if len(temp_vs_select)>100:
                 temp_vs_select = temp_vs_select.sample(n=100, random_state=random_state)
        
         # combine_vs+lab
