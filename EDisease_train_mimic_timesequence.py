@@ -385,10 +385,12 @@ def testt_mimics(EDisease_Model,
                      
             # for structual data
             s,sp, sm = sample['structure'],sample['structure_position_ids'], sample['structure_attention_mask']
+            st = sample['structure_time_ids']
                
             s_emb = stc2emb(inputs=s,
                                  attention_mask=sm,
-                                 position_ids=sp)
+                                 position_ids=sp,
+                                 time_ids=st)
             
             predict = EDisease_Model.classifier(s_emb[:,0,:])
 

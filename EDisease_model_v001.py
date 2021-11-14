@@ -112,7 +112,7 @@ class structure_emb(nn.Module):
         if time_ids is None:
             inputs_embeds = self.float2emb(0.05*inputs)
         else:
-            inputs_embeds = inputs_embeds = self.float2emb(0.05*inputs) + self.float2emb(0.1*time_ids,time=True)            
+            inputs_embeds = self.float2emb(0.05*inputs) + self.float2emb(0.1*time_ids,time=True)            
             
         outputs = self.BERTmodel(inputs_embeds=inputs_embeds,
                                  attention_mask=attention_mask,

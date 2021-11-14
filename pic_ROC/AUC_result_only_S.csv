@@ -1,0 +1,8 @@
+,0,1,2
+0,only_S,EM,AUC=0.825 (0.801-0.849)
+1,only_S,GAIN,AUC=0.685 (0.657-0.713)
+2,only_S,KNN,AUC=0.784 (0.758-0.810)
+3,only_S,MICE,AUC=0.785 (0.759-0.811)
+4,only_S,MIDA,AUC=0.773 (0.747-0.799)
+5,only_S,Mean,AUC=0.791 (0.765-0.816)
+6,only_S,Spectrum,AUC=0.839 (0.815-0.862)

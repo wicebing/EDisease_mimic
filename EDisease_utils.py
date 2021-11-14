@@ -231,6 +231,8 @@ def calculate_ci_auroc():
     
     ROC_threshold = torch.linspace(0,1,100).numpy()
     
+    res_ = []
+    
     for auc_cls in auc_class:
         auc_cls_name = os.path.basename(auc_cls)
         auc_files = glob.glob(os.path.join(auc_cls,'*.pkl'))
@@ -255,6 +257,7 @@ def calculate_ci_auroc():
                                 AUC = roc_auc)
             
             print(auc_cls_name,method, auc_ci)
+            res_.append([auc_cls_name,method, auc_ci])
     
             label_auc2 = f'{method}, {auc_ci}'        
             ax.plot(fpr,tpr,label=label_auc2)
@@ -267,7 +270,9 @@ def calculate_ci_auroc():
         plt.xlim(0.,1.)
         plt.ylim(0.,1.)
         plt.legend()
-        plt.savefig(f'./pic_ROC/AUCs_{auc_cls_name}.png')    
+        plt.savefig(f'./pic_ROC/AUCs_{auc_cls_name}.png')   
+        
+        pd.DataFrame(res_).to_csv(f'./pic_ROC/AUC_result_{auc_cls_name}.csv')
     
     
 
