@@ -45,7 +45,7 @@ try:
 except:
     name = None
 
-batch_size = 64
+batch_size = 128
 
 parallel = False
 
@@ -486,13 +486,13 @@ if task=='train':
     
     DL_train = DataLoader(dataset = ds_train,
                          shuffle = True,
-                         num_workers=4,
+                         num_workers=8,
                          batch_size=batch_size,
                          collate_fn=dataloader.collate_fn_time_sequence)
     
     DL_valid = DataLoader(dataset = ds_valid,
                          shuffle = False,
-                         num_workers=4,
+                         num_workers=2,
                          batch_size=batch_size,
                          collate_fn=dataloader.collate_fn_time_sequence)
 

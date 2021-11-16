@@ -1203,3 +1203,262 @@ if task=='test_mlp_ip':
     valres.to_pickle(f'./result_pickles/EDmlpFlat_{name}_{roc_auc*1000:.0f}.pkl')
 
     print(f'auc: {roc_auc:.3f}')
+    
+if task=='trainTS':
+
+    # timesequence vitalsign
+    filepath = os.path.join(db_file_path, 'data_EDis', 'stayid_vitalsign_TS.pdpkl')
+    stayid_vitalsign_TS = pd.read_pickle(filepath)
+    
+    # timesequence lab
+    filepath = os.path.join(db_file_path, 'data_EDis', 'labevents_merge_dropna_clean_combine.pdpkl')
+    labevents_merge_dropna_clean_combine = pd.read_pickle(filepath)
+
+    # combime the idx with mean std
+    df_train_set_vitalsign_mean = train_set_vitalsign_mean.to_frame()
+    df_train_set_vitalsign_mean.columns = ['mean']
+    df_train_set_agegender_mean = train_set_agegender_mean.to_frame()
+    df_train_set_agegender_mean.columns = ['mean']
+    df_train_set_lab_mean = train_set_lab_mean.to_frame()
+    df_train_set_lab_mean.columns = ['mean']
+    df_io_24_mean = io_24_mean.to_frame()
+    df_io_24_mean.columns = ['mean']
+    
+    df_train_set_mean = pd.concat([df_train_set_agegender_mean,
+                                   df_train_set_vitalsign_mean,
+                                   df_train_set_lab_mean,
+                                   df_io_24_mean],axis=0)
+    
+    df_train_set_vitalsign_std = train_set_vitalsign_std.to_frame()
+    df_train_set_vitalsign_std.columns = ['std']
+    df_train_set_agegender_std = train_set_agegender_std.to_frame()
+    df_train_set_agegender_std.columns = ['std']
+    df_train_set_lab_std = train_set_lab_std.to_frame()
+    df_train_set_lab_std.columns = ['std']
+    df_io_24_std = io_24_std.to_frame()
+    df_io_24_std.columns = ['std']
+    
+    df_train_set_std = pd.concat([df_train_set_agegender_std,
+                                   df_train_set_vitalsign_std,
+                                   df_train_set_lab_std,
+                                   df_io_24_std],axis=0)
+    
+    structurals_idx_mean_std = pd.concat([structurals_idx,df_train_set_mean,df_train_set_std],axis=1)
+    # combime the idx with mean std
+
+    device = f'cuda:{gpus}'
+    
+    mlp = False
+    checkpoint_file = '../checkpoint_EDs/EDisease_spectrum_TS'
+    if not os.path.isdir(checkpoint_file):
+        os.makedirs(checkpoint_file)
+        print(f' make dir {checkpoint_file}')
+    
+    EDisease_Model = ED_model.EDisease_Model(T_config=T_config,
+                                             S_config=S_config
+                                             )
+
+    stc2emb = ED_model.structure_emb(S_config)
+    emb_emb = ED_model.emb_emb(T_config)
+
+    dim_model = ED_model.DIM(T_config=T_config,
+                              alpha=alpha,
+                              beta=beta,
+                              gamma=gamma)
+
+    print('dim_model PARAMETERS: ' ,count_parameters(dim_model))
+    print('emb_emb PARAMETERS: ' ,count_parameters(emb_emb))
+    print('stc2emb PARAMETERS: ' ,count_parameters(stc2emb))
+    print('EDisease_Model PARAMETERS: ' ,count_parameters(EDisease_Model))
+    
+    try: 
+        EDisease_Model = load_checkpoint(checkpoint_file,'EDisease_Model_best.pth',EDisease_Model)
+        print(' ** Complete Load CLS EDisease Model ** ')
+    except:
+        print('*** No Pretrain_EDisease_CLS_Model ***')
+
+    try:     
+        dim_model = load_checkpoint(checkpoint_file,'dim_model_best.pth',dim_model)
+    except:
+        print('*** No Pretrain_dim_model ***')
+
+    try:     
+        stc2emb = load_checkpoint(checkpoint_file,'stc2emb_best.pth',stc2emb)
+    except:
+        print('*** No Pretrain_stc2emb ***')
+
+    try:     
+        emb_emb = load_checkpoint(checkpoint_file,'emb_emb_best.pth',emb_emb)
+    except:
+        print('*** No Pretrain_emb_emb ***')
+
+    ds_train = dataloader.mimic_time_sequence_Dataset(set_hadmid=train_set_hadmid,
+                                        icustays_select=icustays_select_sort_dropduplicate,
+                                        agegender=agegender,
+                                        timesequence_vital_signs=stayid_vitalsign_TS,
+                                        timesequence_lab=labevents_merge_dropna_clean_combine,
+                                        diagnoses_icd_merge_dropna=diagnoses_icd_merge_dropna,
+                                        tokanizer=BERT_tokenizer,
+                                        structurals_idx=structurals_idx_mean_std,
+                                        dsidx=balance_train_set_hadmid,
+                                        test=False)
+    
+    ds_valid = dataloader.mimic_time_sequence_Dataset(set_hadmid=val_set_hadmid,
+                                        icustays_select=icustays_select_sort_dropduplicate,
+                                        agegender=agegender,
+                                        timesequence_vital_signs=stayid_vitalsign_TS,
+                                        timesequence_lab=labevents_merge_dropna_clean_combine,
+                                        diagnoses_icd_merge_dropna=diagnoses_icd_merge_dropna,
+                                        tokanizer=BERT_tokenizer,
+                                        structurals_idx=structurals_idx_mean_std,
+                                        dsidx=None,
+                                        test=True)
+    
+    DL_train = DataLoader(dataset = ds_train,
+                         shuffle = True,
+                         num_workers=8,
+                         batch_size=batch_size,
+                         collate_fn=dataloader.collate_fn_time_sequence)
+    
+    DL_valid = DataLoader(dataset = ds_valid,
+                         shuffle = False,
+                         num_workers=2,
+                         batch_size=batch_size,
+                         collate_fn=dataloader.collate_fn_time_sequence)
+
+
+# ====
+    train_mimics(EDisease_Model=EDisease_Model,
+                 stc2emb=stc2emb,
+                 dloader=DL_train,
+                 dloader_v=DL_valid, 
+                 lr=1e-5,
+                 epoch=200,
+                 log_interval=10,
+                 noise_scale=0.002,
+                 mask_ratio=0.33,
+                 parallel=parallel,                     
+                 checkpoint_file=checkpoint_file,
+                 noise=True,
+                 gpus=gpus,
+                 device=device,
+                 mlp=mlp) 
+
+if task=='testTS':
+
+    # timesequence vitalsign
+    filepath = os.path.join(db_file_path, 'data_EDis', 'stayid_vitalsign_TS.pdpkl')
+    stayid_vitalsign_TS = pd.read_pickle(filepath)
+    
+    # timesequence lab
+    filepath = os.path.join(db_file_path, 'data_EDis', 'labevents_merge_dropna_clean_combine.pdpkl')
+    labevents_merge_dropna_clean_combine = pd.read_pickle(filepath)
+
+    # combime the idx with mean std
+    df_train_set_vitalsign_mean = train_set_vitalsign_mean.to_frame()
+    df_train_set_vitalsign_mean.columns = ['mean']
+    df_train_set_agegender_mean = train_set_agegender_mean.to_frame()
+    df_train_set_agegender_mean.columns = ['mean']
+    df_train_set_lab_mean = train_set_lab_mean.to_frame()
+    df_train_set_lab_mean.columns = ['mean']
+    df_io_24_mean = io_24_mean.to_frame()
+    df_io_24_mean.columns = ['mean']
+    
+    df_train_set_mean = pd.concat([df_train_set_agegender_mean,
+                                   df_train_set_vitalsign_mean,
+                                   df_train_set_lab_mean,
+                                   df_io_24_mean],axis=0)
+    
+    df_train_set_vitalsign_std = train_set_vitalsign_std.to_frame()
+    df_train_set_vitalsign_std.columns = ['std']
+    df_train_set_agegender_std = train_set_agegender_std.to_frame()
+    df_train_set_agegender_std.columns = ['std']
+    df_train_set_lab_std = train_set_lab_std.to_frame()
+    df_train_set_lab_std.columns = ['std']
+    df_io_24_std = io_24_std.to_frame()
+    df_io_24_std.columns = ['std']
+    
+    df_train_set_std = pd.concat([df_train_set_agegender_std,
+                                   df_train_set_vitalsign_std,
+                                   df_train_set_lab_std,
+                                   df_io_24_std],axis=0)
+    
+    structurals_idx_mean_std = pd.concat([structurals_idx,df_train_set_mean,df_train_set_std],axis=1)
+    # combime the idx with mean std
+
+
+    device = f'cuda:{gpus}'
+    
+    mlp = False
+    checkpoint_file = '../checkpoint_EDs/EDisease_spectrum_TS'
+    if not os.path.isdir(checkpoint_file):
+        os.makedirs(checkpoint_file)
+        print(f' make dir {checkpoint_file}')
+    
+    EDisease_Model = ED_model.EDisease_Model(T_config=T_config,
+                                             S_config=S_config
+                                             )
+
+    stc2emb = ED_model.structure_emb(S_config)
+    emb_emb = ED_model.emb_emb(T_config)
+
+    dim_model = ED_model.DIM(T_config=T_config,
+                              alpha=alpha,
+                              beta=beta,
+                              gamma=gamma)
+
+    print('dim_model PARAMETERS: ' ,count_parameters(dim_model))
+    print('emb_emb PARAMETERS: ' ,count_parameters(emb_emb))
+    print('stc2emb PARAMETERS: ' ,count_parameters(stc2emb))
+    print('EDisease_Model PARAMETERS: ' ,count_parameters(EDisease_Model))
+    
+    try: 
+        EDisease_Model = load_checkpoint(checkpoint_file,'EDisease_Model_best.pth',EDisease_Model)
+        print(' ** Complete Load CLS EDisease Model ** ')
+    except:
+        print('*** No Pretrain_EDisease_CLS_Model ***')
+
+    try:     
+        dim_model = load_checkpoint(checkpoint_file,'dim_model_best.pth',dim_model)
+    except:
+        print('*** No Pretrain_dim_model ***')
+
+    try:     
+        stc2emb = load_checkpoint(checkpoint_file,'stc2emb_best.pth',stc2emb)
+    except:
+        print('*** No Pretrain_stc2emb ***')
+
+    try:     
+        emb_emb = load_checkpoint(checkpoint_file,'emb_emb_best.pth',emb_emb)
+    except:
+        print('*** No Pretrain_emb_emb ***')
+
+    ds_test  = dataloader.mimic_time_sequence_Dataset(set_hadmid=test_set_hadmid,
+                                        icustays_select=icustays_select_sort_dropduplicate,
+                                        agegender=agegender,
+                                        timesequence_vital_signs=stayid_vitalsign_TS,
+                                        timesequence_lab=labevents_merge_dropna_clean_combine,
+                                        diagnoses_icd_merge_dropna=diagnoses_icd_merge_dropna,
+                                        tokanizer=BERT_tokenizer,
+                                        structurals_idx=structurals_idx_mean_std,
+                                        dsidx=None,
+                                        test=True)
+    DL_test = DataLoader(dataset = ds_test,
+                         shuffle = False,
+                         num_workers=4,
+                         batch_size=batch_size,
+                         collate_fn=dataloader.collate_fn_time_sequence)
+
+# ====
+    valres= testt_mimics(EDisease_Model,
+                         stc2emb,
+                         DL_test,
+                         parallel=False,
+                         gpus=gpus,
+                         device=device)               
+
+    fpr, tpr, _ = roc_curve(valres['ground_truth'].values, valres['probability'].values)
+    
+    roc_auc = auc(fpr,tpr)
+    
+    valres.to_pickle(f'./result_pickles/EDspectrumTS_OnlyS_{roc_auc*1000:.0f}.pkl')

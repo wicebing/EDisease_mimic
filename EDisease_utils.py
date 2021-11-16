@@ -162,7 +162,7 @@ def draw_time():
         ax = plt.subplot2grid((10,10),(yi,xi))
         ax.plot(value)
         ax.axis('off')
-        plt.title(f'{p:.1f}',fontsize=50)
+        plt.title(f'{0.05*p:.1f}',fontsize=50)
         
     plt.savefig('./Spectrum_time_pi_final.png')  
     
@@ -182,10 +182,10 @@ def draw_spectrum_time_innerproduct():
 
     # k_thida = torch.cat([k_thida.cos(),k_thida.sin()],dim=-1)
     
-    xlabels = list((5*(torch.arange(20))).numpy())
+    xlabels = list((0.25*(torch.arange(20))).numpy())
     
     kk = k_thida[0]
-    ktn = torch.matmul(kk,kk.T).numpy()
+    ktn = torch.matmul(kk.T,kk).numpy()
     # ktn = (kt -kt.mean())/kt.std()
  
     ktn_clamp = (ktn-ktn.min())
