@@ -1330,6 +1330,9 @@ if task=='trainTS':
 # ====
     train_mimics(EDisease_Model=EDisease_Model,
                  stc2emb=stc2emb,
+                 emb_emb=emb_emb,
+                 dim_model=dim_model,
+                 baseBERT=baseBERT,
                  dloader=DL_train,
                  dloader_v=DL_valid, 
                  lr=1e-5,
@@ -1452,6 +1455,9 @@ if task=='testTS':
 # ====
     valres= testt_mimics(EDisease_Model,
                          stc2emb,
+                         emb_emb,
+                         dim_model,
+                         baseBERT,
                          DL_test,
                          parallel=False,
                          gpus=gpus,
