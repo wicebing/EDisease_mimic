@@ -1229,7 +1229,7 @@ if task=='test_mlp_ip':
     print(f'auc: {roc_auc:.3f}')
     
 if task=='trainTS':
-
+    batch_size = 64
     # timesequence vitalsign
     filepath = os.path.join(db_file_path, 'data_EDis', 'stayid_vitalsign_TS.pdpkl')
     stayid_vitalsign_TS = pd.read_pickle(filepath)
@@ -1373,7 +1373,7 @@ if task=='trainTS':
                  TS=True) 
 
 if task=='testTS':
-
+    batch_size = 64
     # timesequence vitalsign
     filepath = os.path.join(db_file_path, 'data_EDis', 'stayid_vitalsign_TS.pdpkl')
     stayid_vitalsign_TS = pd.read_pickle(filepath)
