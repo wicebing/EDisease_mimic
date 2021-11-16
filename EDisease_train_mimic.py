@@ -22,6 +22,10 @@ import EDisease_model_v001 as ED_model
 
 import EDisease_dataloader_mimic4_001 as dataloader
 
+import warnings
+from pandas.core.common import SettingWithCopyWarning
+warnings.simplefilter(action="ignore", category=SettingWithCopyWarning)
+
 try:
     task = sys.argv[1]
     print('*****task= ',task)
@@ -124,7 +128,7 @@ icustays_select_sort_dropduplicate = icustays_select_sort_dropduplicate.set_inde
 
 structurals = [*agegender_keys,*vital_signs_keys,*hadmid_first_lab_keys,*io_24_keys]
 structurals_idx = pd.DataFrame(structurals,index=structurals)
-structurals_idx.columns = ['name']
+structurals_idx.columns = ['bb_idx']
 structurals_idx['s_idx'] = 10+np.arange(len(structurals))
 
 # oversampling to balance +/-
@@ -224,7 +228,8 @@ def train_mimics(EDisease_Model,
                  gpus=0,
                  mlp=False,
                  name=None,
-                 only_dx=False
+                 only_dx=False,
+                 TS=False
                  ): 
     
     EDisease_Model.to(device)
@@ -314,7 +319,7 @@ def train_mimics(EDisease_Model,
             
             # for structual data
             s,sp, sm = sample['structure'],sample['structure_position_ids'], sample['structure_attention_mask']
-                  
+                
             if noise:
                 normalization = torch.ones(s.shape).to(device)
                 noise_ = normalization*noise_scale*torch.randn_like(s,device=device)
@@ -322,12 +327,23 @@ def train_mimics(EDisease_Model,
             else:
                 s_noise = s
             
-            s_emb = stc2emb(inputs=s_noise,
-                                 attention_mask=sm,
-                                 position_ids=sp)
-            s_emb_org = stc2emb(inputs=s,
-                                 attention_mask=sm,
-                                 position_ids=sp)
+            if TS:
+                st = sample['structure_time_ids']
+                s_emb = stc2emb(inputs=s_noise,
+                                     attention_mask=sm,
+                                     position_ids=sp,
+                                     time_ids=st)
+                s_emb_org = stc2emb(inputs=s,
+                                     attention_mask=sm,
+                                     position_ids=sp,
+                                     time_ids=st)
+            else:
+                s_emb = stc2emb(inputs=s_noise,
+                                     attention_mask=sm,
+                                     position_ids=sp)
+                s_emb_org = stc2emb(inputs=s,
+                                     attention_mask=sm,
+                                     position_ids=sp)
             
             # make EDisease input data
             things = {}
@@ -532,7 +548,8 @@ def testt_mimics(EDisease_Model,
                  device,
                  parallel=parallel,
                  gpus=0,
-                 only_dx=False
+                 only_dx=False,
+                 TS=False
                  ): 
     
     EDisease_Model.to(device)
@@ -598,10 +615,17 @@ def testt_mimics(EDisease_Model,
             
             # for structual data
             s,sp, sm = sample['structure'],sample['structure_position_ids'], sample['structure_attention_mask']
-               
-            s_emb = stc2emb(inputs=s,
-                                 attention_mask=sm,
-                                 position_ids=sp)
+
+            if TS:
+                st = sample['structure_time_ids']
+                s_emb = stc2emb(inputs=s,
+                                     attention_mask=sm,
+                                     position_ids=sp,
+                                     time_ids=st)
+            else:
+                s_emb = stc2emb(inputs=s,
+                                     attention_mask=sm,
+                                     position_ids=sp)
             
             # make EDisease input data
             things={}
@@ -1292,7 +1316,7 @@ if task=='trainTS':
     except:
         print('*** No Pretrain_emb_emb ***')
 
-    ds_train = dataloader.mimic_time_sequence_Dataset(set_hadmid=train_set_hadmid,
+    ds_train_TS = dataloader.mimic_time_sequence_Dataset(set_hadmid=train_set_hadmid,
                                         icustays_select=icustays_select_sort_dropduplicate,
                                         agegender=agegender,
                                         timesequence_vital_signs=stayid_vitalsign_TS,
@@ -1303,7 +1327,7 @@ if task=='trainTS':
                                         dsidx=balance_train_set_hadmid,
                                         test=False)
     
-    ds_valid = dataloader.mimic_time_sequence_Dataset(set_hadmid=val_set_hadmid,
+    ds_valid_TS = dataloader.mimic_time_sequence_Dataset(set_hadmid=val_set_hadmid,
                                         icustays_select=icustays_select_sort_dropduplicate,
                                         agegender=agegender,
                                         timesequence_vital_signs=stayid_vitalsign_TS,
@@ -1314,13 +1338,13 @@ if task=='trainTS':
                                         dsidx=None,
                                         test=True)
     
-    DL_train = DataLoader(dataset = ds_train,
+    DL_train_TS = DataLoader(dataset = ds_train_TS,
                          shuffle = True,
                          num_workers=8,
                          batch_size=batch_size,
                          collate_fn=dataloader.collate_fn_time_sequence)
     
-    DL_valid = DataLoader(dataset = ds_valid,
+    DL_valid_TS = DataLoader(dataset = ds_valid_TS,
                          shuffle = False,
                          num_workers=2,
                          batch_size=batch_size,
@@ -1333,8 +1357,8 @@ if task=='trainTS':
                  emb_emb=emb_emb,
                  dim_model=dim_model,
                  baseBERT=baseBERT,
-                 dloader=DL_train,
-                 dloader_v=DL_valid, 
+                 dloader=DL_train_TS,
+                 dloader_v=DL_valid_TS, 
                  lr=1e-5,
                  epoch=200,
                  log_interval=10,
@@ -1345,7 +1369,8 @@ if task=='trainTS':
                  noise=True,
                  gpus=gpus,
                  device=device,
-                 mlp=mlp) 
+                 mlp=mlp,
+                 TS=True) 
 
 if task=='testTS':
 
@@ -1436,7 +1461,7 @@ if task=='testTS':
     except:
         print('*** No Pretrain_emb_emb ***')
 
-    ds_test  = dataloader.mimic_time_sequence_Dataset(set_hadmid=test_set_hadmid,
+    ds_test_TS  = dataloader.mimic_time_sequence_Dataset(set_hadmid=test_set_hadmid,
                                         icustays_select=icustays_select_sort_dropduplicate,
                                         agegender=agegender,
                                         timesequence_vital_signs=stayid_vitalsign_TS,
@@ -1446,7 +1471,7 @@ if task=='testTS':
                                         structurals_idx=structurals_idx_mean_std,
                                         dsidx=None,
                                         test=True)
-    DL_test = DataLoader(dataset = ds_test,
+    DL_test_TS = DataLoader(dataset = ds_test_TS,
                          shuffle = False,
                          num_workers=4,
                          batch_size=batch_size,
@@ -1458,10 +1483,11 @@ if task=='testTS':
                          emb_emb,
                          dim_model,
                          baseBERT,
-                         DL_test,
+                         DL_test_TS,
                          parallel=False,
                          gpus=gpus,
-                         device=device)               
+                         device=device,
+                         TS=True)               
 
     fpr, tpr, _ = roc_curve(valres['ground_truth'].values, valres['probability'].values)
     
