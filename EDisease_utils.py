@@ -296,7 +296,21 @@ def draw_distribution():
     
     fig = plt.figure(figsize=(120,60),dpi=100)
     
-    for p, k in enumerate(structurals):        
+    isna_ag = pd.read_csv('./isna_agegender.csv')
+    isna_lab = pd.read_csv('./isna_hadmid_first_lab_percent.csv')
+    isna_vs = pd.read_csv('./isna_vital_signs_percent.csv')
+    
+    isna_df = pd.concat([isna_ag,isna_lab,isna_vs],axis=0, ignore_index=True)
+    isna_df.columns = ['kk','percentage']
+    
+    iooo = pd.DataFrame([['io_24',0.]])
+    iooo.columns = ['kk','percentage']
+    
+    isna_df = pd.concat([isna_df,iooo],axis=0, ignore_index=True)
+    isna_df = isna_df.sort_values('percentage',ascending=False)
+    
+    
+    for p, k in enumerate(isna_df['kk']):        
         xi = p%10
         yi = int(p/10)
         ax = plt.subplot2grid((6,10),(yi,xi))
@@ -320,6 +334,12 @@ def draw_distribution():
                 ax.axes.yaxis.set_visible(False)
                 plt.xticks(size = 35,rotation=45)
                 plt.subplots_adjust(top = 0.95, hspace = 0.45)
-                plt.title(f'{k}',fontsize=60)
+                
+                if k =='SEX':
+                    plt.title(f'GENDER',fontsize=60)
+                elif k == 'io_24':
+                    plt.title(f'IO',fontsize=60)
+                else:
+                    plt.title(f'{k}',fontsize=60)
         
-    plt.savefig('./data_distribution.png') 
+    plt.savefig('./data_distribution2.png') 
