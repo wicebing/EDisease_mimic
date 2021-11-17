@@ -185,7 +185,7 @@ def draw_spectrum_time_innerproduct():
     xlabels = list((0.25*(torch.arange(20))).numpy())
     
     kk = k_thida[0]
-    ktn = torch.matmul(kk.T,kk).numpy()
+    ktn = torch.matmul(kk,kk.T).numpy()
     # ktn = (kt -kt.mean())/kt.std()
  
     ktn_clamp = (ktn-ktn.min())
@@ -274,5 +274,52 @@ def calculate_ci_auroc():
         
         pd.DataFrame(res_).to_csv(f'./pic_ROC/AUC_result_{auc_cls_name}.csv')
     
-    
+def draw_distribution():
+    # load data
+    db_file_path = '../datahouse/mimic-iv-0.4'
 
+    filepath = os.path.join(db_file_path, 'data_EDis', 'select_temp0.pdpkl')
+    icustays_select = pd.read_pickle(filepath)
+
+    filepath = os.path.join(db_file_path, 'data_EDis', 'agegender.pdpkl')
+    agegender = pd.read_pickle(filepath)
+
+    filepath = os.path.join(db_file_path, 'data_EDis', 'stayid_first_vitalsign.pdpkl')
+    vital_signs = pd.read_pickle(filepath)
+
+    filepath = os.path.join(db_file_path, 'data_EDis', 'hadmid_first_lab.pdpkl')
+    hadmid_first_lab = pd.read_pickle(filepath)
+    
+    io_24 = icustays_select[['io_24']]
+    
+    structurals = [*agegender.keys(),*vital_signs.keys(),*hadmid_first_lab.keys(),*io_24.keys()]
+    
+    fig = plt.figure(figsize=(120,60),dpi=100)
+    
+    for p, k in enumerate(structurals):        
+        xi = p%10
+        yi = int(p/10)
+        ax = plt.subplot2grid((6,10),(yi,xi))
+        
+        dfs = [io_24,agegender,vital_signs,hadmid_first_lab]
+        for df in dfs:
+            if k in df.keys():
+                dist = df[[k]]
+            
+                n, bins, patches = ax.hist(dist.values, 40, 
+                                           density = 0.8,  
+                                           # color ='green',  
+                                           alpha = 0.7)
+                
+                mu = dist.mean().values
+                sigma = dist.std().values
+                  
+                y = ((1 / (np.sqrt(2 * np.pi) * sigma)) *
+                     np.exp(-0.5 * (1 / sigma * (bins - mu))**2)) 
+                ax.plot(bins, y, '--', color ='black', linewidth=10) 
+                ax.axes.yaxis.set_visible(False)
+                plt.xticks(size = 35,rotation=45)
+                plt.subplots_adjust(top = 0.95, hspace = 0.45)
+                plt.title(f'{k}',fontsize=60)
+        
+    plt.savefig('./data_distribution.png') 
