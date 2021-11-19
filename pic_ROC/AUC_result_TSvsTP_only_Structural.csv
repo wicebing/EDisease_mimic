@@ -1,0 +1,4 @@
+,0,1,2
+0,only_Structural,Spectrum,AUC=0.839 (0.815-0.862)
+1,only_Structural,SpectrumTimeSeq,AUC=0.849 (0.827-0.872)
+2,only_Structural,Mean,AUC=0.791 (0.765-0.816)
