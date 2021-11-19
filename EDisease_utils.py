@@ -97,9 +97,9 @@ def draw_test():
         xi = p%10
         yi = int(p/10)
         ax = plt.subplot2grid((10,10),(yi,xi))
-        ax.plot(value)
+        ax.plot(value,linewidth=10)
         ax.axis('off')
-        plt.title(f'{0.2*(p-49.5):.2f}',fontsize=50)
+        plt.title(f'{0.2*(p-49.5):.2f}',fontsize=60)
         
     plt.savefig('./Spectrum_test_pi_final.png')    
 
@@ -160,9 +160,9 @@ def draw_time():
         xi = p%10
         yi = int(p/10)
         ax = plt.subplot2grid((10,10),(yi,xi))
-        ax.plot(value)
+        ax.plot(value,linewidth=10)
         ax.axis('off')
-        plt.title(f'{0.05*p:.1f}',fontsize=50)
+        plt.title(f'{0.05*p:.1f}',fontsize=60)
         
     plt.savefig('./Spectrum_time_pi_final.png')  
     
