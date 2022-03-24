@@ -28,21 +28,27 @@ warnings.simplefilter(action="ignore", category=SettingWithCopyWarning)
 
 try:
     task = sys.argv[1]
-    print('*****task= ',task)
 except:
     task = 'test_nhamcs_cls'
-    
+print('*****task= ',task)
+ 
 try:
     gpus = int(sys.argv[2])
-    print('*****gpus = ', gpus)
 except:
     gpus = 0
+print('*****gpus = ', gpus)
     
 try:
-    name = sys.argv[3]
-    print('*****name = ', name)
+    random_state = int(sys.argv[3])
+except:
+    random_state = 0
+print('*****random_state = ', random_state)
+
+try:
+    name = sys.argv[4]
 except:
     name = None
+print('*****name = ', name)
 
 batch_size = 128
 
@@ -83,9 +89,9 @@ filepath = os.path.join(db_file_path, 'data_EDis', 'diagnoses_icd_merge_dropna.p
 diagnoses_icd_merge_dropna = pd.read_pickle(filepath)
 
 # split the dataset
-train_set_hadmid = hadmid_first_lab.sample(frac=0.85,random_state=0).index
+train_set_hadmid = hadmid_first_lab.sample(frac=0.80,random_state=random_state).index
 temp_set_hadmid = hadmid_first_lab.drop(train_set_hadmid)
-val_set_hadmid = temp_set_hadmid.sample(frac=0.25,random_state=0).index
+val_set_hadmid = temp_set_hadmid.sample(frac=0.50,random_state=random_state).index
 test_set_hadmid = temp_set_hadmid.drop(val_set_hadmid).index
 
 # get the training set mean/std
@@ -530,12 +536,12 @@ def train_mimics(EDisease_Model,
                 print(e)
             
             pd_total_auc = pd.DataFrame(auc_record)
-            pd_total_auc.to_csv(f'./loss_record/total_auc_{s_type}_{name}.csv', sep = ',')
+            pd_total_auc.to_csv(f'./loss_record/{random_state}/total_auc_{s_type}_{name}.csv', sep = ',')
         
         print('++ Ep Time: {:.1f} Secs ++'.format(time.time()-t0)) 
         total_loss.append(float(epoch_loss/epoch_cases))
         pd_total_loss = pd.DataFrame(total_loss)
-        pd_total_loss.to_csv(f'./loss_record/total_loss_{s_type}_{name}.csv', sep = ',')
+        pd_total_loss.to_csv(f'./loss_record/{random_state}/total_loss_{s_type}_{name}.csv', sep = ',')
     print(total_loss) 
 
 
@@ -671,7 +677,7 @@ if task=='train':
     device = f'cuda:{gpus}'
     
     mlp = False
-    checkpoint_file = '../checkpoint_EDs/EDisease_spectrum_flat'
+    checkpoint_file = '../checkpoint_EDs/{random_state}/EDisease_spectrum_flat'
     if not os.path.isdir(checkpoint_file):
         os.makedirs(checkpoint_file)
         print(f' make dir {checkpoint_file}')
@@ -738,7 +744,7 @@ if task=='test':
     device = f'cuda:{gpus}'
     
     mlp = False
-    checkpoint_file = '../checkpoint_EDs/EDisease_spectrum_flat'
+    checkpoint_file = '../checkpoint_EDs/{random_state}/EDisease_spectrum_flat'
     if not os.path.isdir(checkpoint_file):
         os.makedirs(checkpoint_file)
         print(f' make dir {checkpoint_file}')
@@ -796,7 +802,7 @@ if task=='test':
     
     roc_auc = auc(fpr,tpr)
     
-    valres.to_pickle(f'./result_pickles/EDspectrumFlat_{roc_auc*1000:.0f}.pkl')
+    valres.to_pickle(f'./result_pickles/{random_state}/EDspectrumFlat_{roc_auc*1000:.0f}.pkl')
 
     print(f'auc: {roc_auc:.3f}')
     
@@ -808,7 +814,7 @@ if task=='train_mlp':
     device = f'cuda:{gpus}'
     
     mlp = True
-    checkpoint_file = f'../checkpoint_EDs/EDisease_spectrum_flat_oldstr2emb_{name}'
+    checkpoint_file = f'../checkpoint_EDs/{random_state}/EDisease_spectrum_flat_oldstr2emb_{name}'
     if not os.path.isdir(checkpoint_file):
         os.makedirs(checkpoint_file)
         print(f' make dir {checkpoint_file}')
@@ -879,7 +885,7 @@ if task=='test_mlp':
     device = f'cuda:{gpus}'
     
     mlp = True
-    checkpoint_file = f'../checkpoint_EDs/EDisease_spectrum_flat_oldstr2emb_{name}'
+    checkpoint_file = f'../checkpoint_EDs/{random_state}/EDisease_spectrum_flat_oldstr2emb_{name}'
     if not os.path.isdir(checkpoint_file):
         os.makedirs(checkpoint_file)
         print(f' make dir {checkpoint_file}')
@@ -933,16 +939,16 @@ if task=='test_mlp':
     
     roc_auc = auc(fpr,tpr)
     
-    valres.to_pickle(f'./result_pickles/EDmlpFlat_{name}_{roc_auc*1000:.0f}.pkl')
+    valres.to_pickle(f'./result_pickles/{random_state}/EDmlpFlat_{name}_{roc_auc*1000:.0f}.pkl')
 
     print(f'auc: {roc_auc:.3f}')
         
 if task=='train_mlp_ip':
     print(f' =========== imputation name = {name} ============')
-    filepath = os.path.join(db_file_path, 'data_EDis_imputation', f'stayid_first_vitalsign_{name}.pdpkl')
+    filepath = os.path.join(db_file_path, 'data_EDis_imputation',f'{random_state}', f'stayid_first_vitalsign_{name}.pdpkl')
     vital_signs_ip = pd.read_pickle(filepath)
     
-    filepath = os.path.join(db_file_path, 'data_EDis_imputation', f'hadmid_first_lab_{name}.pdpkl')
+    filepath = os.path.join(db_file_path, 'data_EDis_imputation',f'{random_state}', f'hadmid_first_lab_{name}.pdpkl')
     hadmid_first_lab_ip = pd.read_pickle(filepath)
     
     ds_train_ip = dataloader.mimic_Dataset(set_hadmid=train_set_hadmid,
@@ -1019,7 +1025,7 @@ if task=='train_mlp_ip':
     
     device = f'cuda:{gpus}'
     mlp = True
-    checkpoint_file = f'../checkpoint_EDs/EDisease_spectrum_flat_oldstr2emb_{name}'
+    checkpoint_file = f'../checkpoint_EDs/{random_state}/EDisease_spectrum_flat_oldstr2emb_{name}'
     if not os.path.isdir(checkpoint_file):
         os.makedirs(checkpoint_file)
         print(f' make dir {checkpoint_file}')
@@ -1085,10 +1091,10 @@ if task=='train_mlp_ip':
 
 if task=='test_mlp_ip':
     print(f' =========== imputation name = {name} ============')
-    filepath = os.path.join(db_file_path, 'data_EDis_imputation', f'stayid_first_vitalsign_{name}.pdpkl')
+    filepath = os.path.join(db_file_path, 'data_EDis_imputation',f'{random_state}', f'stayid_first_vitalsign_{name}.pdpkl')
     vital_signs_ip = pd.read_pickle(filepath)
     
-    filepath = os.path.join(db_file_path, 'data_EDis_imputation', f'hadmid_first_lab_{name}.pdpkl')
+    filepath = os.path.join(db_file_path, 'data_EDis_imputation',f'{random_state}', f'hadmid_first_lab_{name}.pdpkl')
     hadmid_first_lab_ip = pd.read_pickle(filepath)
     
     ds_train_ip = dataloader.mimic_Dataset(set_hadmid=train_set_hadmid,
@@ -1166,7 +1172,7 @@ if task=='test_mlp_ip':
     device = f'cuda:{gpus}'
     
     mlp = True
-    checkpoint_file = f'../checkpoint_EDs/EDisease_spectrum_flat_oldstr2emb_{name}'
+    checkpoint_file = f'../checkpoint_EDs/{random_state}/EDisease_spectrum_flat_oldstr2emb_{name}'
     if not os.path.isdir(checkpoint_file):
         os.makedirs(checkpoint_file)
         print(f' make dir {checkpoint_file}')
@@ -1224,7 +1230,7 @@ if task=='test_mlp_ip':
     
     roc_auc = auc(fpr,tpr)
     
-    valres.to_pickle(f'./result_pickles/EDmlpFlat_{name}_{roc_auc*1000:.0f}.pkl')
+    valres.to_pickle(f'./result_pickles/{random_state}/EDmlpFlat_{name}_{roc_auc*1000:.0f}.pkl')
 
     print(f'auc: {roc_auc:.3f}')
     
@@ -1273,7 +1279,7 @@ if task=='trainTS':
     device = f'cuda:{gpus}'
     
     mlp = False
-    checkpoint_file = '../checkpoint_EDs/EDisease_spectrum_TS'
+    checkpoint_file = '../checkpoint_EDs/{random_state}/EDisease_spectrum_TS'
     if not os.path.isdir(checkpoint_file):
         os.makedirs(checkpoint_file)
         print(f' make dir {checkpoint_file}')
@@ -1418,7 +1424,7 @@ if task=='testTS':
     device = f'cuda:{gpus}'
     
     mlp = False
-    checkpoint_file = '../checkpoint_EDs/EDisease_spectrum_TS'
+    checkpoint_file = '../checkpoint_EDs/{random_state}/EDisease_spectrum_TS'
     if not os.path.isdir(checkpoint_file):
         os.makedirs(checkpoint_file)
         print(f' make dir {checkpoint_file}')
@@ -1493,4 +1499,4 @@ if task=='testTS':
     
     roc_auc = auc(fpr,tpr)
     
-    valres.to_pickle(f'./result_pickles/EDspectrumTS_OnlyS_{roc_auc*1000:.0f}.pkl')
+    valres.to_pickle(f'./result_pickles/{random_state}/EDspectrumTS_OnlyS_{roc_auc*1000:.0f}.pkl')
