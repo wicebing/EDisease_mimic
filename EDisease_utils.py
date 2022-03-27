@@ -393,3 +393,106 @@ def draw_distribution():
                     plt.title(f'{k}',fontsize=60)
         
     plt.savefig('./data_distribution2.png') 
+    
+
+def make_less_70_missing_rate_data():
+    db_file_path = '../datahouse/mimic-iv-0.4'
+    isna_lab = pd.read_csv('./isna_hadmid_first_lab_percent.csv')
+    isna_lab.columns = ['name', 'p']
+    temp = list(isna_lab[isna_lab['p']<0.7]['name'])
+
+    filepath = os.path.join(db_file_path, 'data_EDis', 'hadmid_first_lab.pdpkl')
+    hadmid_first_lab = pd.read_pickle(filepath)
+    
+    #sken convert
+    Right_skew = ['Glucose', 'Ca', 'Lac', 'NH3', 'AMY', 'ALP', 'AST',  'BIL-T','Ddimer',
+                  'CK', 'Crea', 'Mg',  'K',  'BUN', 'PTINR', 'GGT', 'Lipase',  
+                  'PTT', 'WBC']
+    for ar in Right_skew:
+        # hadmid_first_lab_less70[ar] = np.log(hadmid_first_lab_less70[ar])
+        # hadmid_first_lab[ar].hist(bins=100)
+        hadmid_first_lab.loc[:,[ar]] = np.log(hadmid_first_lab[[ar]])
+
+    Right_skew2 = ['ALT','BIL-T', 'P','TnT','Eosin','Lym','PLT', 'FreeT4','Band','Myelo',
+                   'Blast','UrineRBC', 'UrineWBC','BIL-D', 'PTINR',]
+    for ar in Right_skew2:
+       # hadmid_first_lab_less70[ar] = np.log(hadmid_first_lab_less70[ar])
+        # hadmid_first_lab[ar].hist(bins=100)
+        hadmid_first_lab.loc[:,[ar]] = np.sqrt(hadmid_first_lab[[ar]])
+        
+    Left_skew = ['Seg']
+    for lr in Left_skew:
+        # hadmid_first_lab_less70[ar] = np.log(hadmid_first_lab_less70[ar])
+        # hadmid_first_lab[lr].hist(bins=100)
+        hadmid_first_lab.loc[:,[lr]] = np.square(hadmid_first_lab[[lr]])
+        
+    filepath = os.path.join(db_file_path, 'data_EDis', 'select_temp0.pdpkl')
+    icustays_select = pd.read_pickle(filepath)
+
+    filepath = os.path.join(db_file_path, 'data_EDis', 'agegender.pdpkl')
+    agegender = pd.read_pickle(filepath)
+
+    filepath = os.path.join(db_file_path, 'data_EDis', 'stayid_first_vitalsign.pdpkl')
+    vital_signs = pd.read_pickle(filepath)
+    
+    io_24 = icustays_select[['io_24']]
+    
+    structurals = [*agegender.keys(),*vital_signs.keys(),*hadmid_first_lab.keys(),*io_24.keys()]
+    
+    fig = plt.figure(figsize=(120,60),dpi=100)
+    
+    isna_ag = pd.read_csv('./isna_agegender.csv')
+    isna_lab = pd.read_csv('./isna_hadmid_first_lab_percent.csv')
+    isna_vs = pd.read_csv('./isna_vital_signs_percent.csv')
+    
+    isna_df = pd.concat([isna_ag,isna_lab,isna_vs],axis=0, ignore_index=True)
+    isna_df.columns = ['kk','percentage']
+    
+    iooo = pd.DataFrame([['io_24',0.]])
+    iooo.columns = ['kk','percentage']
+    
+    isna_df = pd.concat([isna_df,iooo],axis=0, ignore_index=True)
+    isna_df = isna_df.sort_values('percentage',ascending=False)
+    
+    
+    for p, k in enumerate(isna_df['kk']):        
+        xi = p%10
+        yi = int(p/10)
+        ax = plt.subplot2grid((6,10),(yi,xi))
+        
+        dfs = [io_24,agegender,vital_signs,hadmid_first_lab]
+        for df in dfs:
+            if k in df.keys():
+                dist = df[[k]]
+            
+                n, bins, patches = ax.hist(dist.values, 40, 
+                                           density = 0.8,  
+                                           # color ='green',  
+                                           alpha = 0.7)
+                
+                mu = dist.mean().values
+                sigma = dist.std().values
+                  
+                y = ((1 / (np.sqrt(2 * np.pi) * sigma)) *
+                     np.exp(-0.5 * (1 / sigma * (bins - mu))**2)) 
+                ax.plot(bins, y, '--', color ='black', linewidth=10) 
+                ax.axes.yaxis.set_visible(False)
+                plt.xticks(size = 35,rotation=45)
+                plt.subplots_adjust(top = 0.95, hspace = 0.45)
+                
+                if k =='SEX':
+                    plt.title(f'GENDER',fontsize=60)
+                elif k == 'io_24':
+                    plt.title(f'IO',fontsize=60)
+                else:
+                    plt.title(f'{k}',fontsize=60)
+        
+    plt.savefig('./data_distribution_sken_adjust.png') 
+    
+    hadmid_first_lab_less70 = hadmid_first_lab[temp]
+    
+    filepath = os.path.join(db_file_path, 'data_EDis', 'hadmid_first_lab_skem_adjust.pdpkl')
+    hadmid_first_lab.to_pickle(filepath)
+
+    filepath = os.path.join(db_file_path, 'data_EDis', 'hadmid_first_lab_skem_adjust_less70.pdpkl')
+    hadmid_first_lab_less70.to_pickle(filepath)

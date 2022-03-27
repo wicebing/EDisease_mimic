@@ -442,7 +442,7 @@ def testt_mimics(EDisease_Model,
 '  =======================================================================================================  '   
 '  =======================================================================================================  '   
             
-if task=='train':
+if task=='train_':
     device = f'cuda:{gpus}'
     
     mlp = False
@@ -506,7 +506,7 @@ if task=='train':
                  device=device,
                  mlp=mlp) 
 
-if task=='test':
+if task=='test_':
     device = f'cuda:{gpus}'
     
     mlp = False
