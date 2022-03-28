@@ -51,6 +51,12 @@ except:
     name = None
 print('*****name = ', name)
 
+try:
+    skemAdjust = sys.argv[5]
+except:
+    skemAdjust = 'origin'
+print('*****skemAdjust = ', skemAdjust)
+
 batch_size = 128
 
 parallel = False
@@ -101,7 +107,7 @@ diagnoses_icd_merge_dropna = pd.read_pickle(filepath)
 # split the dataset
 train_set_hadmid = hadmid_first_lab.sample(frac=0.80,random_state=random_state).index
 temp_set_hadmid = hadmid_first_lab.drop(train_set_hadmid)
-val_set_hadmid = temp_set_hadmid.sample(frac=0.20,random_state=random_state).index
+val_set_hadmid = temp_set_hadmid.sample(frac=0.50,random_state=random_state).index
 test_set_hadmid = temp_set_hadmid.drop(val_set_hadmid).index
 
 # get the training set mean/std
@@ -354,12 +360,12 @@ def train_mimics(EDisease_Model,
                 print(e)
             
             pd_total_auc = pd.DataFrame(auc_record)
-            pd_total_auc.to_csv(f'./loss_record/{random_state}/total_auc_s_TS_{s_type}_{name}.csv', sep = ',')
+            pd_total_auc.to_csv(f'./loss_record/{skemAdjust}/{random_state}/total_auc_s_TS_{s_type}_{name}.csv', sep = ',')
         
         print('++ Ep Time: {:.1f} Secs ++'.format(time.time()-t0)) 
         total_loss.append(float(epoch_loss/epoch_cases))
         pd_total_loss = pd.DataFrame(total_loss)
-        pd_total_loss.to_csv(f'./loss_record/{random_state}/total_loss_s_TS_{s_type}_{name}.csv', sep = ',')
+        pd_total_loss.to_csv(f'./loss_record/{skemAdjust}/{random_state}/total_loss_s_TS_{s_type}_{name}.csv', sep = ',')
     print(total_loss) 
 
 
@@ -425,7 +431,7 @@ if task=='train':
     device = f'cuda:{gpus}'
     
     mlp = False
-    checkpoint_file = '../checkpoint_EDs_OnlyS/{random_state}/EDisease_spectrum_TS'
+    checkpoint_file = '../checkpoint_EDs_OnlyS/{skemAdjust}/{random_state}/EDisease_spectrum_TS'
     if not os.path.isdir(checkpoint_file):
         os.makedirs(checkpoint_file)
         print(f' make dir {checkpoint_file}')
@@ -524,7 +530,7 @@ if task=='test':
     device = f'cuda:{gpus}'
     
     mlp = False
-    checkpoint_file = '../checkpoint_EDs_OnlyS/{random_state}/EDisease_spectrum_TS'
+    checkpoint_file = '../checkpoint_EDs_OnlyS/{skemAdjust}/{random_state}/EDisease_spectrum_TS'
     if not os.path.isdir(checkpoint_file):
         os.makedirs(checkpoint_file)
         print(f' make dir {checkpoint_file}')
@@ -595,4 +601,4 @@ if task=='test':
     
     roc_auc = auc(fpr,tpr)
     
-    valres.to_pickle(f'./result_pickles/{random_state}/EDspectrumTS_OnlyS_{roc_auc*1000:.0f}.pkl')
+    valres.to_pickle(f'./result_pickles/{skemAdjust}/{random_state}/EDspectrumTS_OnlyS_{roc_auc*1000:.0f}.pkl')

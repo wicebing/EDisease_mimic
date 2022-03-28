@@ -154,7 +154,7 @@ for random_state in range(5):
                 print(' replace the train set without future look valtest')
                 IP_hadmid_first_lab.loc[trainset_hadmid,select_lab_keys] = IP_np_hadmid_lab_train
                 
-                filepath = os.path.join(db_file_path, 'data_EDis_imputation', f'{random_state}', f'hadmid_first_lab_skemadjust_{name}.pdpkl')
+                filepath = os.path.join(db_file_path, 'data_EDis_imputation','skemAdjust', f'{random_state}', f'hadmid_first_lab_skemadjust_{name}.pdpkl')
                 IP_hadmid_first_lab.to_pickle(filepath)     
             except:
                 print(f' cannot imputation {name}')

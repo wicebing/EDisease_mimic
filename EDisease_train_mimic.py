@@ -17,7 +17,7 @@ from sklearn.metrics import roc_curve, auc, accuracy_score
 from transformers import AutoConfig, AutoTokenizer, AutoModel, BertConfig, BertModel
 
 from EDisease_utils import count_parameters, save_checkpoint, load_checkpoint
-from EDisease_config import EDiseaseConfig, StructrualConfig
+from EDisease_config import EDiseaseConfig, StructrualConfig, StructrualConfig_less70
 import EDisease_model_v001 as ED_model
 
 import EDisease_dataloader_mimic4_001 as dataloader
@@ -50,6 +50,12 @@ except:
     name = None
 print('*****name = ', name)
 
+try:
+    skemAdjust = sys.argv[5]
+except:
+    skemAdjust = 'origin'
+print('*****skemAdjust = ', skemAdjust)
+
 batch_size = 128
 
 parallel = False
@@ -61,7 +67,10 @@ gamma=0.1
 # fix the BERT version
 model_name = "bert-base-multilingual-cased"
 T_config = EDiseaseConfig()
-S_config = StructrualConfig()
+if skemAdjust == 'skemAdjustLess70':
+    S_config = StructrualConfig_less70()
+else:
+    S_config = StructrualConfig()
 
 baseBERT = ED_model.adjBERTmodel(bert_ver=model_name,T_config=T_config,fixBERT=True)
 BERT_tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -82,8 +91,14 @@ agegender = pd.read_pickle(filepath)
 filepath = os.path.join(db_file_path, 'data_EDis', 'stayid_first_vitalsign.pdpkl')
 vital_signs = pd.read_pickle(filepath)
 
-filepath = os.path.join(db_file_path, 'data_EDis', 'hadmid_first_lab.pdpkl')
+if skemAdjust == 'skemAdjust':
+    filepath = os.path.join(db_file_path, 'data_EDis', 'hadmid_first_lab_skem_adjust.pdpkl')
+elif skemAdjust == 'skemAdjustLess70':
+    filepath = os.path.join(db_file_path, 'data_EDis', 'hadmid_first_lab_skem_adjust_less70.pdpkl')
+else:
+    filepath = os.path.join(db_file_path, 'data_EDis', 'hadmid_first_lab.pdpkl')
 hadmid_first_lab = pd.read_pickle(filepath)
+
 
 filepath = os.path.join(db_file_path, 'data_EDis', 'diagnoses_icd_merge_dropna.pdpkl')
 diagnoses_icd_merge_dropna = pd.read_pickle(filepath)
@@ -536,12 +551,12 @@ def train_mimics(EDisease_Model,
                 print(e)
             
             pd_total_auc = pd.DataFrame(auc_record)
-            pd_total_auc.to_csv(f'./loss_record/{random_state}/total_auc_{s_type}_{name}.csv', sep = ',')
+            pd_total_auc.to_csv(f'./loss_record/{skemAdjust}/{random_state}/total_auc_{s_type}_{name}.csv', sep = ',')
         
         print('++ Ep Time: {:.1f} Secs ++'.format(time.time()-t0)) 
         total_loss.append(float(epoch_loss/epoch_cases))
         pd_total_loss = pd.DataFrame(total_loss)
-        pd_total_loss.to_csv(f'./loss_record/{random_state}/total_loss_{s_type}_{name}.csv', sep = ',')
+        pd_total_loss.to_csv(f'./loss_record/{skemAdjust}/{random_state}/total_loss_{s_type}_{name}.csv', sep = ',')
     print(total_loss) 
 
 
@@ -677,7 +692,7 @@ if task=='train':
     device = f'cuda:{gpus}'
     
     mlp = False
-    checkpoint_file = '../checkpoint_EDs/{random_state}/EDisease_spectrum_flat'
+    checkpoint_file = '../checkpoint_EDs/{skemAdjust}/{random_state}/EDisease_spectrum_flat'
     if not os.path.isdir(checkpoint_file):
         os.makedirs(checkpoint_file)
         print(f' make dir {checkpoint_file}')
@@ -744,7 +759,7 @@ if task=='test':
     device = f'cuda:{gpus}'
     
     mlp = False
-    checkpoint_file = '../checkpoint_EDs/{random_state}/EDisease_spectrum_flat'
+    checkpoint_file = '../checkpoint_EDs/{skemAdjust}/{random_state}/EDisease_spectrum_flat'
     if not os.path.isdir(checkpoint_file):
         os.makedirs(checkpoint_file)
         print(f' make dir {checkpoint_file}')
@@ -802,7 +817,7 @@ if task=='test':
     
     roc_auc = auc(fpr,tpr)
     
-    valres.to_pickle(f'./result_pickles/{random_state}/EDspectrumFlat_{roc_auc*1000:.0f}.pkl')
+    valres.to_pickle(f'./result_pickles/{skemAdjust}/{random_state}/EDspectrumFlat_{roc_auc*1000:.0f}.pkl')
 
     print(f'auc: {roc_auc:.3f}')
     
@@ -814,7 +829,7 @@ if task=='train_mlp':
     device = f'cuda:{gpus}'
     
     mlp = True
-    checkpoint_file = f'../checkpoint_EDs/{random_state}/EDisease_spectrum_flat_oldstr2emb_{name}'
+    checkpoint_file = f'../checkpoint_EDs/{skemAdjust}/{random_state}/EDisease_spectrum_flat_oldstr2emb_{name}'
     if not os.path.isdir(checkpoint_file):
         os.makedirs(checkpoint_file)
         print(f' make dir {checkpoint_file}')
@@ -885,7 +900,7 @@ if task=='test_mlp':
     device = f'cuda:{gpus}'
     
     mlp = True
-    checkpoint_file = f'../checkpoint_EDs/{random_state}/EDisease_spectrum_flat_oldstr2emb_{name}'
+    checkpoint_file = f'../checkpoint_EDs/{skemAdjust}/{random_state}/EDisease_spectrum_flat_oldstr2emb_{name}'
     if not os.path.isdir(checkpoint_file):
         os.makedirs(checkpoint_file)
         print(f' make dir {checkpoint_file}')
@@ -939,16 +954,16 @@ if task=='test_mlp':
     
     roc_auc = auc(fpr,tpr)
     
-    valres.to_pickle(f'./result_pickles/{random_state}/EDmlpFlat_{name}_{roc_auc*1000:.0f}.pkl')
+    valres.to_pickle(f'./result_pickles/{skemAdjust}/{random_state}/EDmlpFlat_{name}_{roc_auc*1000:.0f}.pkl')
 
     print(f'auc: {roc_auc:.3f}')
         
 if task=='train_mlp_ip':
     print(f' =========== imputation name = {name} ============')
-    filepath = os.path.join(db_file_path, 'data_EDis_imputation',f'{random_state}', f'stayid_first_vitalsign_{name}.pdpkl')
+    filepath = os.path.join(db_file_path, 'data_EDis_imputation','origin',f'{random_state}', f'stayid_first_vitalsign_{name}.pdpkl')
     vital_signs_ip = pd.read_pickle(filepath)
     
-    filepath = os.path.join(db_file_path, 'data_EDis_imputation',f'{random_state}', f'hadmid_first_lab_{name}.pdpkl')
+    filepath = os.path.join(db_file_path, 'data_EDis_imputation',f'{skemAdjust}',f'{random_state}', f'hadmid_first_lab_{name}.pdpkl')
     hadmid_first_lab_ip = pd.read_pickle(filepath)
     
     ds_train_ip = dataloader.mimic_Dataset(set_hadmid=train_set_hadmid,
@@ -1025,7 +1040,7 @@ if task=='train_mlp_ip':
     
     device = f'cuda:{gpus}'
     mlp = True
-    checkpoint_file = f'../checkpoint_EDs/{random_state}/EDisease_spectrum_flat_oldstr2emb_{name}'
+    checkpoint_file = f'../checkpoint_EDs/{skemAdjust}/{random_state}/EDisease_spectrum_flat_oldstr2emb_{name}'
     if not os.path.isdir(checkpoint_file):
         os.makedirs(checkpoint_file)
         print(f' make dir {checkpoint_file}')
@@ -1091,10 +1106,10 @@ if task=='train_mlp_ip':
 
 if task=='test_mlp_ip':
     print(f' =========== imputation name = {name} ============')
-    filepath = os.path.join(db_file_path, 'data_EDis_imputation',f'{random_state}', f'stayid_first_vitalsign_{name}.pdpkl')
+    filepath = os.path.join(db_file_path, 'data_EDis_imputation','origin',f'{random_state}', f'stayid_first_vitalsign_{name}.pdpkl')
     vital_signs_ip = pd.read_pickle(filepath)
     
-    filepath = os.path.join(db_file_path, 'data_EDis_imputation',f'{random_state}', f'hadmid_first_lab_{name}.pdpkl')
+    filepath = os.path.join(db_file_path, 'data_EDis_imputation',f'{skemAdjust}',f'{random_state}', f'hadmid_first_lab_{name}.pdpkl')
     hadmid_first_lab_ip = pd.read_pickle(filepath)
     
     ds_train_ip = dataloader.mimic_Dataset(set_hadmid=train_set_hadmid,
@@ -1172,7 +1187,7 @@ if task=='test_mlp_ip':
     device = f'cuda:{gpus}'
     
     mlp = True
-    checkpoint_file = f'../checkpoint_EDs/{random_state}/EDisease_spectrum_flat_oldstr2emb_{name}'
+    checkpoint_file = f'../checkpoint_EDs/{skemAdjust}/{random_state}/EDisease_spectrum_flat_oldstr2emb_{name}'
     if not os.path.isdir(checkpoint_file):
         os.makedirs(checkpoint_file)
         print(f' make dir {checkpoint_file}')
@@ -1279,7 +1294,7 @@ if task=='trainTS':
     device = f'cuda:{gpus}'
     
     mlp = False
-    checkpoint_file = '../checkpoint_EDs/{random_state}/EDisease_spectrum_TS'
+    checkpoint_file = '../checkpoint_EDs/{skemAdjust}/{random_state}/EDisease_spectrum_TS'
     if not os.path.isdir(checkpoint_file):
         os.makedirs(checkpoint_file)
         print(f' make dir {checkpoint_file}')
@@ -1424,7 +1439,7 @@ if task=='testTS':
     device = f'cuda:{gpus}'
     
     mlp = False
-    checkpoint_file = '../checkpoint_EDs/{random_state}/EDisease_spectrum_TS'
+    checkpoint_file = '../checkpoint_EDs/{skemAdjust}/{random_state}/EDisease_spectrum_TS'
     if not os.path.isdir(checkpoint_file):
         os.makedirs(checkpoint_file)
         print(f' make dir {checkpoint_file}')
@@ -1499,4 +1514,4 @@ if task=='testTS':
     
     roc_auc = auc(fpr,tpr)
     
-    valres.to_pickle(f'./result_pickles/{random_state}/EDspectrumTS_OnlyS_{roc_auc*1000:.0f}.pkl')
+    valres.to_pickle(f'./result_pickles/{skemAdjust}/{random_state}/EDspectrumTS_OnlyS_{roc_auc*1000:.0f}.pkl')
