@@ -496,3 +496,41 @@ def make_less_70_missing_rate_data():
 
     filepath = os.path.join(db_file_path, 'data_EDis', 'hadmid_first_lab_skem_adjust_less70.pdpkl')
     hadmid_first_lab_less70.to_pickle(filepath)
+
+
+def make_less_50_missing_rate_data():
+    db_file_path = '../datahouse/mimic-iv-0.4'
+    isna_lab = pd.read_csv('./isna_hadmid_first_lab_percent.csv')
+    isna_lab.columns = ['name', 'p']
+    temp = list(isna_lab[isna_lab['p']<0.3]['name'])
+
+    filepath = os.path.join(db_file_path, 'data_EDis', 'hadmid_first_lab.pdpkl')
+    hadmid_first_lab = pd.read_pickle(filepath)
+    
+    #sken convert
+    Right_skew = ['Glucose', 'Ca', 'Lac', 'NH3', 'AMY', 'ALP', 'AST',  'BIL-T','Ddimer',
+                  'CK', 'Crea', 'Mg',  'K',  'BUN', 'PTINR', 'GGT', 'Lipase',  
+                  'PTT', 'WBC']
+    for ar in Right_skew:
+        # hadmid_first_lab_less70[ar] = np.log(hadmid_first_lab_less70[ar])
+        # hadmid_first_lab[ar].hist(bins=100)
+        hadmid_first_lab.loc[:,[ar]] = np.log(hadmid_first_lab[[ar]])
+
+    Right_skew2 = ['ALT','BIL-T', 'P','TnT','Eosin','Lym','PLT', 'FreeT4','Band','Myelo',
+                   'Blast','UrineRBC', 'UrineWBC','BIL-D', 'PTINR',]
+    for ar in Right_skew2:
+       # hadmid_first_lab_less70[ar] = np.log(hadmid_first_lab_less70[ar])
+        # hadmid_first_lab[ar].hist(bins=100)
+        hadmid_first_lab.loc[:,[ar]] = np.sqrt(hadmid_first_lab[[ar]])
+        
+    Left_skew = ['Seg']
+    for lr in Left_skew:
+        # hadmid_first_lab_less70[ar] = np.log(hadmid_first_lab_less70[ar])
+        # hadmid_first_lab[lr].hist(bins=100)
+        hadmid_first_lab.loc[:,[lr]] = np.square(hadmid_first_lab[[lr]])
+          
+    hadmid_first_lab_less70 = hadmid_first_lab[temp]
+    
+    filepath = os.path.join(db_file_path, 'data_EDis', 'hadmid_first_lab_skem_adjust_less30.pdpkl')
+    hadmid_first_lab_less70.to_pickle(filepath)
+

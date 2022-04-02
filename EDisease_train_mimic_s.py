@@ -17,7 +17,7 @@ from sklearn.metrics import roc_curve, auc, accuracy_score
 from transformers import AutoConfig, AutoTokenizer, AutoModel, BertConfig, BertModel
 
 from EDisease_utils import count_parameters, save_checkpoint, load_checkpoint
-from EDisease_config import EDiseaseConfig, StructrualConfig, StructrualConfig_less70
+from EDisease_config import EDiseaseConfig, StructrualConfig, StructrualConfig_less70, StructrualConfig_less50, StructrualConfig_less30
 import EDisease_model_v001 as ED_model
 
 import EDisease_dataloader_mimic4_001 as dataloader
@@ -41,16 +41,16 @@ except:
 print('*****random_state = ', random_state)
 
 try:
-    name = sys.argv[4]
-except:
-    name = None
-print('*****name = ', name)
-
-try:
-    skemAdjust = sys.argv[5]
+    skemAdjust = sys.argv[4]
 except:
     skemAdjust = 'origin'
 print('*****skemAdjust = ', skemAdjust)
+
+try:
+    name = sys.argv[5]
+except:
+    name = None
+print('*****name = ', name)
 
 batch_size = 128
 
@@ -65,6 +65,10 @@ model_name = "bert-base-multilingual-cased"
 T_config = EDiseaseConfig()
 if skemAdjust == 'skemAdjustLess70':
     S_config = StructrualConfig_less70()
+elif skemAdjust == 'skemAdjustLess50':
+    S_config = StructrualConfig_less50()
+elif skemAdjust == 'skemAdjustLess30':
+    S_config = StructrualConfig_less30()
 else:
     S_config = StructrualConfig()
 
@@ -91,6 +95,10 @@ if skemAdjust == 'skemAdjust':
     filepath = os.path.join(db_file_path, 'data_EDis', 'hadmid_first_lab_skem_adjust.pdpkl')
 elif skemAdjust == 'skemAdjustLess70':
     filepath = os.path.join(db_file_path, 'data_EDis', 'hadmid_first_lab_skem_adjust_less70.pdpkl')
+elif skemAdjust == 'skemAdjustLess50':
+    filepath = os.path.join(db_file_path, 'data_EDis', 'hadmid_first_lab_skem_adjust_less50.pdpkl')
+elif skemAdjust == 'skemAdjustLess30':
+    filepath = os.path.join(db_file_path, 'data_EDis', 'hadmid_first_lab_skem_adjust_less30.pdpkl')
 else:
     filepath = os.path.join(db_file_path, 'data_EDis', 'hadmid_first_lab.pdpkl')
 hadmid_first_lab = pd.read_pickle(filepath)

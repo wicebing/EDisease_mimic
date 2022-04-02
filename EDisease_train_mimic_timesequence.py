@@ -46,16 +46,16 @@ except:
 print('*****random_state = ', random_state)
 
 try:
-    name = sys.argv[4]
-except:
-    name = None
-print('*****name = ', name)
-
-try:
-    skemAdjust = sys.argv[5]
+    skemAdjust = sys.argv[4]
 except:
     skemAdjust = 'origin'
 print('*****skemAdjust = ', skemAdjust)
+
+try:
+    name = sys.argv[5]
+except:
+    name = None
+print('*****name = ', name)
 
 batch_size = 128
 
@@ -427,11 +427,11 @@ def testt_mimics(EDisease_Model,
 '  =======================================================================================================  '   
 '  =======================================================================================================  '   
             
-if task=='train':
+if task=='train_':
     device = f'cuda:{gpus}'
     
     mlp = False
-    checkpoint_file = '../checkpoint_EDs_OnlyS/{skemAdjust}/{random_state}/EDisease_spectrum_TS'
+    checkpoint_file = f'../checkpoint_EDs_OnlyS/{skemAdjust}/{random_state}/EDisease_spectrum_TS'
     if not os.path.isdir(checkpoint_file):
         os.makedirs(checkpoint_file)
         print(f' make dir {checkpoint_file}')
@@ -526,11 +526,11 @@ if task=='train':
                  device=device,
                  mlp=mlp) 
 
-if task=='test':
+if task=='test_':
     device = f'cuda:{gpus}'
     
     mlp = False
-    checkpoint_file = '../checkpoint_EDs_OnlyS/{skemAdjust}/{random_state}/EDisease_spectrum_TS'
+    checkpoint_file = f'../checkpoint_EDs_OnlyS/{skemAdjust}/{random_state}/EDisease_spectrum_TS'
     if not os.path.isdir(checkpoint_file):
         os.makedirs(checkpoint_file)
         print(f' make dir {checkpoint_file}')
