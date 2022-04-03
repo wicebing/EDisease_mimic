@@ -1253,7 +1253,7 @@ if task=='test_mlp_ip':
     
     roc_auc = auc(fpr,tpr)
     
-    valres.to_pickle(f'./result_pickles/{random_state}/EDmlpFlat_{name}_{roc_auc*1000:.0f}.pkl')
+    valres.to_pickle(f'./result_pickles/{skemAdjust}/{random_state}/EDmlpFlat_{name}_{roc_auc*1000:.0f}.pkl')
 
     print(f'auc: {roc_auc:.3f}')
     

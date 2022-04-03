@@ -533,4 +533,75 @@ def make_less_50_missing_rate_data():
     
     filepath = os.path.join(db_file_path, 'data_EDis', 'hadmid_first_lab_skem_adjust_less30.pdpkl')
     hadmid_first_lab_less70.to_pickle(filepath)
+    
+def draw_tsne_type_token():
+    # load data
+    db_file_path = '../datahouse/mimic-iv-0.4'
 
+    filepath = os.path.join(db_file_path, 'data_EDis', 'select_temp0.pdpkl')
+    icustays_select = pd.read_pickle(filepath)
+
+    filepath = os.path.join(db_file_path, 'data_EDis', 'agegender.pdpkl')
+    agegender = pd.read_pickle(filepath)
+
+    filepath = os.path.join(db_file_path, 'data_EDis', 'stayid_first_vitalsign.pdpkl')
+    vital_signs = pd.read_pickle(filepath)
+
+    filepath = os.path.join(db_file_path, 'data_EDis', 'hadmid_first_lab.pdpkl')
+    hadmid_first_lab = pd.read_pickle(filepath)    
+
+    agegender_keys = agegender.keys()
+    vital_signs_keys = vital_signs.keys()
+    hadmid_first_lab_keys = hadmid_first_lab.keys()
+    io_24_keys = icustays_select[['io_24']].keys()
+    
+    
+    structurals = [*agegender_keys,*vital_signs_keys,*hadmid_first_lab_keys,*io_24_keys]
+    structurals_idx = pd.DataFrame(structurals,index=structurals)
+    structurals_idx.columns = ['name']
+    structurals_idx['s_idx'] = 10+np.arange(len(structurals))
+    
+    checkpoint_file = f'../checkpoint_EDs/85_15/EDisease_spectrum_TS'
+    
+    import EDisease_model_v001 as ED_model
+    from EDisease_config import EDiseaseConfig, StructrualConfig
+    
+    S_config = StructrualConfig()
+    stc2emb = ED_model.structure_emb(S_config)
+    stc2emb = load_checkpoint(checkpoint_file,'stc2emb_best.pth',stc2emb)
+        
+    type_embedding = stc2emb.BERTmodel.embeddings.position_embeddings(torch.tensor(structurals_idx['s_idx'].values))
+    
+    structurals_idx['idx'] = np.arange(60)
+    
+    structurals_idx = structurals_idx.set_index('idx')
+    
+    from sklearn import manifold
+    from sklearn.decomposition import PCA
+    import matplotlib.patheffects as PathEffects
+
+    pca = PCA(n_components=2)
+    pca.fit(type_embedding.detach().numpy()) 
+    XY_pca = pca.transform(type_embedding.detach().numpy())
+
+    for j in range(300):
+
+        tsne = manifold.TSNE(n_components=2, init='pca', random_state=j, n_iter=2500)
+        T_tsne = tsne.fit_transform(type_embedding.detach().numpy())
+       
+        xy = T_tsne
+      
+        fig = plt.figure(figsize=(15,15),dpi=100)
+        
+        ax = plt.subplot(aspect='equal')
+        sc = ax.scatter(xy[:,0], xy[:,1],s=150)
+        ax.axis('off')
+        ax.axis('tight')
+        
+        for i in range(len(structurals_idx)):
+        # Position of each label.
+            txt = ax.text(xy[i,0], xy[i,1], structurals_idx.loc[i]['name'], fontsize=10)
+            # txt.set_path_effects([
+            #     PathEffects.Stroke(linewidth=5, foreground="w"),
+            #     PathEffects.Normal()])
+        plt.savefig(f'./pic_type/0{j}.png')
