@@ -67,6 +67,8 @@ if skemAdjust == 'skemAdjustLess70':
     S_config = StructrualConfig_less70()
 elif skemAdjust == 'skemAdjustLess50':
     S_config = StructrualConfig_less50()
+elif skemAdjust == 'Less50':
+    S_config = StructrualConfig_less50()
 elif skemAdjust == 'skemAdjustLess30':
     S_config = StructrualConfig_less30()
 else:
@@ -99,6 +101,8 @@ elif skemAdjust == 'skemAdjustLess50':
     filepath = os.path.join(db_file_path, 'data_EDis', 'hadmid_first_lab_skem_adjust_less50.pdpkl')
 elif skemAdjust == 'skemAdjustLess30':
     filepath = os.path.join(db_file_path, 'data_EDis', 'hadmid_first_lab_skem_adjust_less30.pdpkl')
+elif skemAdjust == 'Less50':
+    filepath = os.path.join(db_file_path, 'data_EDis', 'hadmid_first_lab_less50.pdpkl')
 else:
     filepath = os.path.join(db_file_path, 'data_EDis', 'hadmid_first_lab.pdpkl')
 hadmid_first_lab = pd.read_pickle(filepath)

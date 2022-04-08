@@ -533,6 +533,21 @@ def make_less_50_missing_rate_data():
     
     filepath = os.path.join(db_file_path, 'data_EDis', 'hadmid_first_lab_skem_adjust_less30.pdpkl')
     hadmid_first_lab_less70.to_pickle(filepath)
+
+def make_less_50_missing_rate_data():
+    db_file_path = '../datahouse/mimic-iv-0.4'
+    isna_lab = pd.read_csv('./isna_hadmid_first_lab_percent.csv')
+    isna_lab.columns = ['name', 'p']
+    temp = list(isna_lab[isna_lab['p']<0.5]['name'])
+
+    filepath = os.path.join(db_file_path, 'data_EDis', 'hadmid_first_lab.pdpkl')
+    hadmid_first_lab = pd.read_pickle(filepath)
+             
+    hadmid_first_lab_less70 = hadmid_first_lab[temp]
+    
+    filepath = os.path.join(db_file_path, 'data_EDis', 'hadmid_first_lab_less50.pdpkl')
+    hadmid_first_lab_less70.to_pickle(filepath)
+
     
 def draw_tsne_type_token():
     # load data
@@ -561,7 +576,7 @@ def draw_tsne_type_token():
     structurals_idx.columns = ['name']
     structurals_idx['s_idx'] = 10+np.arange(len(structurals))
     
-    checkpoint_file = f'../checkpoint_EDs/85_15/EDisease_spectrum_TS'
+    checkpoint_file = f'../checkpoint_EDs/origin/0/EDisease_spectrum_flat'
     
     import EDisease_model_v001 as ED_model
     from EDisease_config import EDiseaseConfig, StructrualConfig
@@ -584,7 +599,24 @@ def draw_tsne_type_token():
     pca.fit(type_embedding.detach().numpy()) 
     XY_pca = pca.transform(type_embedding.detach().numpy())
 
-    for j in range(300):
+    xy = XY_pca
+  
+    fig = plt.figure(figsize=(15,15),dpi=100)
+    
+    ax = plt.subplot(aspect='equal')
+    sc = ax.scatter(xy[:,0], xy[:,1],s=150)
+    ax.axis('off')
+    ax.axis('tight')
+    
+    for i in range(len(structurals_idx)):
+    # Position of each label.
+        txt = ax.text(xy[i,0], xy[i,1], structurals_idx.loc[i]['name'], fontsize=10)
+        # txt.set_path_effects([
+        #     PathEffects.Stroke(linewidth=5, foreground="w"),
+        #     PathEffects.Normal()])
+    plt.savefig(f'./pic_type/0pca.png')
+
+    for j in range(10):
 
         tsne = manifold.TSNE(n_components=2, init='pca', random_state=j, n_iter=2500)
         T_tsne = tsne.fit_transform(type_embedding.detach().numpy())
