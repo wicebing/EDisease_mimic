@@ -576,7 +576,7 @@ def draw_tsne_type_token():
     structurals_idx.columns = ['name']
     structurals_idx['s_idx'] = 10+np.arange(len(structurals))
     
-    checkpoint_file = f'../checkpoint_EDs/origin/0/EDisease_spectrum_flat'
+    checkpoint_file = f'../checkpoint_EDs_OnlyS/origin/0/EDisease_spectrum_TS'
     
     import EDisease_model_v001 as ED_model
     from EDisease_config import EDiseaseConfig, StructrualConfig
