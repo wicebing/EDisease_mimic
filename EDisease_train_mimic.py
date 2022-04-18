@@ -1522,4 +1522,4 @@ if task=='testTS':
     
     roc_auc = auc(fpr,tpr)
     
-    valres.to_pickle(f'./result_pickles/{skemAdjust}/{random_state}/EDspectrumTS_OnlyS_{roc_auc*1000:.0f}.pkl')
+    valres.to_pickle(f'./result_pickles/{skemAdjust}/{random_state}/EDspectrumTS_{roc_auc*1000:.0f}.pkl')
