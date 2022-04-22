@@ -1,7 +1,7 @@
 echo "====== train SPEC ? ? ======" $1 $2
 python EDisease_train_mimic_s.py train_ $1 $2 Less50
 
-echo "====== test SPEC ? ? EM ======" $1 $2 
+echo "====== test SPEC ? ?  ======" $1 $2 
 python EDisease_train_mimic_s.py test_ $1 $2 Less50
 
 echo "====== train ip ? ? mean ======" $1 $2
