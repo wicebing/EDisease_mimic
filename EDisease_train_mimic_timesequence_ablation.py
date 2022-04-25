@@ -17,10 +17,15 @@ from sklearn.metrics import roc_curve, auc, accuracy_score
 from transformers import AutoConfig, AutoTokenizer, AutoModel, BertConfig, BertModel
 
 from EDisease_utils import count_parameters, save_checkpoint, load_checkpoint
-from EDisease_config import EDiseaseConfig, StructrualConfig, StructrualConfig_less70, StructrualConfig_less50, StructrualConfig_less30
+from EDisease_config import EDiseaseConfig, StructrualConfig
 import EDisease_model_v001 as ED_model
 
 import EDisease_dataloader_mimic4_001 as dataloader
+
+import warnings
+from pandas.core.common import SettingWithCopyWarning
+warnings.simplefilter(action="ignore", category=SettingWithCopyWarning)
+
 
 try:
     task = sys.argv[1]
@@ -63,16 +68,7 @@ gamma=0.1
 # fix the BERT version
 model_name = "bert-base-multilingual-cased"
 T_config = EDiseaseConfig()
-if skemAdjust == 'skemAdjustLess70':
-    S_config = StructrualConfig_less70()
-elif skemAdjust == 'skemAdjustLess50':
-    S_config = StructrualConfig_less50()
-elif skemAdjust == 'Less50':
-    S_config = StructrualConfig_less50()
-elif skemAdjust == 'skemAdjustLess30':
-    S_config = StructrualConfig_less30()
-else:
-    S_config = StructrualConfig()
+S_config = StructrualConfig()
 
 baseBERT = ED_model.adjBERTmodel(bert_ver=model_name,T_config=T_config,fixBERT=True)
 BERT_tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -84,6 +80,15 @@ print('baseBERT PARAMETERS: ' ,count_parameters(baseBERT))
 # load data
 db_file_path = '../datahouse/mimic-iv-0.4'
 
+# timesequence vitalsign
+filepath = os.path.join(db_file_path, 'data_EDis', 'stayid_vitalsign_TS.pdpkl')
+stayid_vitalsign_TS = pd.read_pickle(filepath)
+
+# timesequence lab
+filepath = os.path.join(db_file_path, 'data_EDis', 'labevents_merge_dropna_clean_combine.pdpkl')
+labevents_merge_dropna_clean_combine = pd.read_pickle(filepath)
+
+# time point data
 filepath = os.path.join(db_file_path, 'data_EDis', 'select_temp0.pdpkl')
 icustays_select = pd.read_pickle(filepath)
 
@@ -93,18 +98,7 @@ agegender = pd.read_pickle(filepath)
 filepath = os.path.join(db_file_path, 'data_EDis', 'stayid_first_vitalsign.pdpkl')
 vital_signs = pd.read_pickle(filepath)
 
-if skemAdjust == 'skemAdjust':
-    filepath = os.path.join(db_file_path, 'data_EDis', 'hadmid_first_lab_skem_adjust.pdpkl')
-elif skemAdjust == 'skemAdjustLess70':
-    filepath = os.path.join(db_file_path, 'data_EDis', 'hadmid_first_lab_skem_adjust_less70.pdpkl')
-elif skemAdjust == 'skemAdjustLess50':
-    filepath = os.path.join(db_file_path, 'data_EDis', 'hadmid_first_lab_skem_adjust_less50.pdpkl')
-elif skemAdjust == 'skemAdjustLess30':
-    filepath = os.path.join(db_file_path, 'data_EDis', 'hadmid_first_lab_skem_adjust_less30.pdpkl')
-elif skemAdjust == 'Less50':
-    filepath = os.path.join(db_file_path, 'data_EDis', 'hadmid_first_lab_less50.pdpkl')
-else:
-    filepath = os.path.join(db_file_path, 'data_EDis', 'hadmid_first_lab.pdpkl')
+filepath = os.path.join(db_file_path, 'data_EDis', 'hadmid_first_lab.pdpkl')
 hadmid_first_lab = pd.read_pickle(filepath)
 
 filepath = os.path.join(db_file_path, 'data_EDis', 'diagnoses_icd_merge_dropna.pdpkl')
@@ -156,8 +150,40 @@ icustays_select_sort_dropduplicate = icustays_select_sort_dropduplicate.set_inde
 
 structurals = [*agegender_keys,*vital_signs_keys,*hadmid_first_lab_keys,*io_24_keys]
 structurals_idx = pd.DataFrame(structurals,index=structurals)
-structurals_idx.columns = ['name']
+structurals_idx.columns = ['bb_idx']
 structurals_idx['s_idx'] = 10+np.arange(len(structurals))
+
+# combime the idx with mean std
+df_train_set_vitalsign_mean = train_set_vitalsign_mean.to_frame()
+df_train_set_vitalsign_mean.columns = ['mean']
+df_train_set_agegender_mean = train_set_agegender_mean.to_frame()
+df_train_set_agegender_mean.columns = ['mean']
+df_train_set_lab_mean = train_set_lab_mean.to_frame()
+df_train_set_lab_mean.columns = ['mean']
+df_io_24_mean = io_24_mean.to_frame()
+df_io_24_mean.columns = ['mean']
+
+df_train_set_mean = pd.concat([df_train_set_agegender_mean,
+                               df_train_set_vitalsign_mean,
+                               df_train_set_lab_mean,
+                               df_io_24_mean],axis=0)
+
+df_train_set_vitalsign_std = train_set_vitalsign_std.to_frame()
+df_train_set_vitalsign_std.columns = ['std']
+df_train_set_agegender_std = train_set_agegender_std.to_frame()
+df_train_set_agegender_std.columns = ['std']
+df_train_set_lab_std = train_set_lab_std.to_frame()
+df_train_set_lab_std.columns = ['std']
+df_io_24_std = io_24_std.to_frame()
+df_io_24_std.columns = ['std']
+
+df_train_set_std = pd.concat([df_train_set_agegender_std,
+                               df_train_set_vitalsign_std,
+                               df_train_set_lab_std,
+                               df_io_24_std],axis=0)
+
+structurals_idx_mean_std = pd.concat([structurals_idx,df_train_set_mean,df_train_set_std],axis=1)
+
 
 # oversampling to balance +/-
 pos = trainset_temp[trainset_temp['los'] > 7]['hadm_id'].values
@@ -165,77 +191,6 @@ neg = trainset_temp[trainset_temp['los'] <=7]['hadm_id'].values
 ratio = len(neg) / len(pos)
 balance_train_set_hadmid = round(ratio)*list(pos)+list(neg)
 
-ds_train = dataloader.mimic_Dataset(set_hadmid=train_set_hadmid,
-                                    icustays_select=icustays_select_sort_dropduplicate,
-                                    agegender=agegender,
-                                    vital_signs=vital_signs,
-                                    hadmid_first_lab=hadmid_first_lab,
-                                    diagnoses_icd_merge_dropna=diagnoses_icd_merge_dropna,
-                                    tokanizer=BERT_tokenizer,
-                                    train_set_lab_mean=train_set_lab_mean,
-                                    train_set_lab_std=train_set_lab_std,
-                                    train_set_agegender_mean=train_set_agegender_mean,
-                                    train_set_agegender_std=train_set_agegender_std,
-                                    train_set_vitalsign_mean=train_set_vitalsign_mean,
-                                    train_set_vitalsign_std=train_set_vitalsign_std,
-                                    io_24_mean=io_24_mean,
-                                    io_24_std=io_24_std,
-                                    structurals_idx=structurals_idx,
-                                    dsidx=balance_train_set_hadmid)
-
-ds_valid = dataloader.mimic_Dataset(set_hadmid=val_set_hadmid,
-                                    icustays_select=icustays_select_sort_dropduplicate,
-                                    agegender=agegender,
-                                    vital_signs=vital_signs,
-                                    hadmid_first_lab=hadmid_first_lab,
-                                    diagnoses_icd_merge_dropna=diagnoses_icd_merge_dropna,
-                                    tokanizer=BERT_tokenizer,
-                                    train_set_lab_mean=train_set_lab_mean,
-                                    train_set_lab_std=train_set_lab_std,
-                                    train_set_agegender_mean=train_set_agegender_mean,
-                                    train_set_agegender_std=train_set_agegender_std,
-                                    train_set_vitalsign_mean=train_set_vitalsign_mean,
-                                    train_set_vitalsign_std=train_set_vitalsign_std,
-                                    io_24_mean=io_24_mean,
-                                    io_24_std=io_24_std,
-                                    structurals_idx=structurals_idx,
-                                    dsidx=None)
-
-ds_test  = dataloader.mimic_Dataset(set_hadmid=test_set_hadmid,
-                                    icustays_select=icustays_select_sort_dropduplicate,
-                                    agegender=agegender,
-                                    vital_signs=vital_signs,
-                                    hadmid_first_lab=hadmid_first_lab,
-                                    diagnoses_icd_merge_dropna=diagnoses_icd_merge_dropna,
-                                    tokanizer=BERT_tokenizer,
-                                    train_set_lab_mean=train_set_lab_mean,
-                                    train_set_lab_std=train_set_lab_std,
-                                    train_set_agegender_mean=train_set_agegender_mean,
-                                    train_set_agegender_std=train_set_agegender_std,
-                                    train_set_vitalsign_mean=train_set_vitalsign_mean,
-                                    train_set_vitalsign_std=train_set_vitalsign_std,
-                                    io_24_mean=io_24_mean,
-                                    io_24_std=io_24_std,
-                                    structurals_idx=structurals_idx,
-                                    dsidx=None)
-
-DL_train = DataLoader(dataset = ds_train,
-                     shuffle = True,
-                     num_workers=4,
-                     batch_size=batch_size,
-                     collate_fn=dataloader.collate_fn)
-
-DL_valid = DataLoader(dataset = ds_valid,
-                     shuffle = False,
-                     num_workers=4,
-                     batch_size=batch_size,
-                     collate_fn=dataloader.collate_fn)
-
-DL_test = DataLoader(dataset = ds_test,
-                     shuffle = False,
-                     num_workers=4,
-                     batch_size=batch_size,
-                     collate_fn=dataloader.collate_fn)
     
 def train_mimics(EDisease_Model,
                  stc2emb,
@@ -294,6 +249,7 @@ def train_mimics(EDisease_Model,
 
             # for structual data
             s,sp, sm = sample['structure'],sample['structure_position_ids'], sample['structure_attention_mask']
+            st = sample['structure_time_ids']
             
             bs = len(s)
                   
@@ -307,13 +263,22 @@ def train_mimics(EDisease_Model,
             if ablation is None:
                 s_emb = stc2emb(inputs=s_noise,
                                      attention_mask=sm,
-                                     position_ids=sp)
+                                     position_ids=sp,
+                                     time_ids=st)
             elif ablation == 'mask':
                 s_emb = stc2emb(inputs=s_noise,
-                                     position_ids=sp)
+                                     position_ids=sp,
+                                     time_ids=st)
             elif ablation == 'vtype':
                 s_emb = stc2emb(inputs=s_noise,
-                                     attention_mask=sm,)
+                                     attention_mask=sm,
+                                     time_ids=st)
+            elif ablation == 'vtime':
+                s_emb = stc2emb(inputs=s_noise,
+                                     attention_mask=sm,
+                                     position_ids=sp)
+            
+
 
             predict = EDisease_Model.classifier(s_emb[:,0,:])
 
@@ -409,12 +374,12 @@ def train_mimics(EDisease_Model,
                 print(e)
             
             pd_total_auc = pd.DataFrame(auc_record)
-            pd_total_auc.to_csv(f'./loss_record/{skemAdjust}/{random_state}/total_auc_s_{s_type}_ablation_{ablation}.csv', sep = ',')
+            pd_total_auc.to_csv(f'./loss_record/{skemAdjust}/{random_state}/total_auc_s_TS_{s_type}_ablation_{ablation}.csv', sep = ',')
         
         print('++ Ep Time: {:.1f} Secs ++'.format(time.time()-t0)) 
         total_loss.append(float(epoch_loss/epoch_cases))
         pd_total_loss = pd.DataFrame(total_loss)
-        pd_total_loss.to_csv(f'./loss_record/{skemAdjust}/{random_state}/total_loss_s_{s_type}_ablation_{ablation}.csv', sep = ',')
+        pd_total_loss.to_csv(f'./loss_record/{skemAdjust}/{random_state}/total_loss_s_TS_{s_type}_ablation_{ablation}.csv', sep = ',')
     print(total_loss) 
 
 
@@ -424,7 +389,8 @@ def testt_mimics(EDisease_Model,
                  device,
                  parallel=parallel,
                  gpus=0,
-                 ablation=None): 
+                 ablation=None,
+                 ): 
     
     EDisease_Model.to(device)
     stc2emb.to(device)
@@ -446,17 +412,25 @@ def testt_mimics(EDisease_Model,
                      
             # for structual data
             s,sp, sm = sample['structure'],sample['structure_position_ids'], sample['structure_attention_mask']
-                          
+            st = sample['structure_time_ids']
+               
             if ablation is None:
                 s_emb = stc2emb(inputs=s,
                                      attention_mask=sm,
-                                     position_ids=sp)
+                                     position_ids=sp,
+                                     time_ids=st)
             elif ablation == 'mask':
                 s_emb = stc2emb(inputs=s,
-                                     position_ids=sp)
+                                     position_ids=sp,
+                                     time_ids=st)
             elif ablation == 'vtype':
                 s_emb = stc2emb(inputs=s,
-                                     attention_mask=sm,)
+                                     attention_mask=sm,
+                                     time_ids=st)
+            elif ablation == 'vtime':
+                s_emb = stc2emb(inputs=s,
+                                     attention_mask=sm,
+                                     position_ids=sp)
             
             predict = EDisease_Model.classifier(s_emb[:,0,:])
 
@@ -485,7 +459,7 @@ if task=='train_':
     device = f'cuda:{gpus}'
     
     mlp = False
-    checkpoint_file = f'../checkpoint_EDs_OnlyS/{skemAdjust}/{random_state}/{ablation}/EDisease_spectrum_flat'
+    checkpoint_file = f'../checkpoint_EDs_OnlyS/{skemAdjust}/{random_state}/{ablation}/EDisease_spectrum_TS'
     if not os.path.isdir(checkpoint_file):
         os.makedirs(checkpoint_file)
         print(f' make dir {checkpoint_file}')
@@ -527,6 +501,41 @@ if task=='train_':
         emb_emb = load_checkpoint(checkpoint_file,'emb_emb_best.pth',emb_emb)
     except:
         print('*** No Pretrain_emb_emb ***')
+
+    ds_train = dataloader.mimic_time_sequence_Dataset(set_hadmid=train_set_hadmid,
+                                        icustays_select=icustays_select_sort_dropduplicate,
+                                        agegender=agegender,
+                                        timesequence_vital_signs=stayid_vitalsign_TS,
+                                        timesequence_lab=labevents_merge_dropna_clean_combine,
+                                        diagnoses_icd_merge_dropna=diagnoses_icd_merge_dropna,
+                                        tokanizer=BERT_tokenizer,
+                                        structurals_idx=structurals_idx_mean_std,
+                                        dsidx=balance_train_set_hadmid,
+                                        test=False)
+    
+    ds_valid = dataloader.mimic_time_sequence_Dataset(set_hadmid=val_set_hadmid,
+                                        icustays_select=icustays_select_sort_dropduplicate,
+                                        agegender=agegender,
+                                        timesequence_vital_signs=stayid_vitalsign_TS,
+                                        timesequence_lab=labevents_merge_dropna_clean_combine,
+                                        diagnoses_icd_merge_dropna=diagnoses_icd_merge_dropna,
+                                        tokanizer=BERT_tokenizer,
+                                        structurals_idx=structurals_idx_mean_std,
+                                        dsidx=None,
+                                        test=True)
+    
+    DL_train = DataLoader(dataset = ds_train,
+                         shuffle = True,
+                         num_workers=8,
+                         batch_size=batch_size,
+                         collate_fn=dataloader.collate_fn_time_sequence)
+    
+    DL_valid = DataLoader(dataset = ds_valid,
+                         shuffle = False,
+                         num_workers=2,
+                         batch_size=batch_size,
+                         collate_fn=dataloader.collate_fn_time_sequence)
+
 
 # ====
     train_mimics(EDisease_Model=EDisease_Model,
@@ -550,7 +559,7 @@ if task=='test_':
     device = f'cuda:{gpus}'
     
     mlp = False
-    checkpoint_file = f'../checkpoint_EDs_OnlyS/{skemAdjust}/{random_state}/{ablation}/EDisease_spectrum_flat'
+    checkpoint_file = f'../checkpoint_EDs_OnlyS/{skemAdjust}/{random_state}/{ablation}/EDisease_spectrum_TS'
     if not os.path.isdir(checkpoint_file):
         os.makedirs(checkpoint_file)
         print(f' make dir {checkpoint_file}')
@@ -593,6 +602,22 @@ if task=='test_':
     except:
         print('*** No Pretrain_emb_emb ***')
 
+    ds_test  = dataloader.mimic_time_sequence_Dataset(set_hadmid=test_set_hadmid,
+                                        icustays_select=icustays_select_sort_dropduplicate,
+                                        agegender=agegender,
+                                        timesequence_vital_signs=stayid_vitalsign_TS,
+                                        timesequence_lab=labevents_merge_dropna_clean_combine,
+                                        diagnoses_icd_merge_dropna=diagnoses_icd_merge_dropna,
+                                        tokanizer=BERT_tokenizer,
+                                        structurals_idx=structurals_idx_mean_std,
+                                        dsidx=None,
+                                        test=True)
+    DL_test = DataLoader(dataset = ds_test,
+                         shuffle = False,
+                         num_workers=4,
+                         batch_size=batch_size,
+                         collate_fn=dataloader.collate_fn_time_sequence)
+
 # ====
     valres= testt_mimics(EDisease_Model,
                          stc2emb,
@@ -606,7 +631,4 @@ if task=='test_':
     
     roc_auc = auc(fpr,tpr)
     
-    valres.to_pickle(f'./result_pickles/{skemAdjust}/{random_state}/EDspectrumFlat_OnlyS_{ablation}_{roc_auc*1000:.0f}.pkl')
-
-    print(f'auc: {roc_auc:.3f}')
-    
+    valres.to_pickle(f'./result_pickles/{skemAdjust}/{random_state}/EDspectrumTS_OnlyS_{ablation}_{roc_auc*1000:.0f}.pkl')
