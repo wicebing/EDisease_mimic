@@ -267,16 +267,19 @@ def train_mimics(EDisease_Model,
                                      time_ids=st)
             elif ablation == 'mask':
                 s_emb = stc2emb(inputs=s_noise,
+                                attention_mask=None,
                                      position_ids=sp,
                                      time_ids=st)
             elif ablation == 'vtype':
                 s_emb = stc2emb(inputs=s_noise,
                                      attention_mask=sm,
+                                     position_ids=sp*0.,
                                      time_ids=st)
             elif ablation == 'vtime':
                 s_emb = stc2emb(inputs=s_noise,
                                      attention_mask=sm,
-                                     position_ids=sp)
+                                     position_ids=sp,
+                                     time_ids=st*0.)
             
 
 
@@ -421,16 +424,19 @@ def testt_mimics(EDisease_Model,
                                      time_ids=st)
             elif ablation == 'mask':
                 s_emb = stc2emb(inputs=s,
+                                attention_mask=None,
                                      position_ids=sp,
                                      time_ids=st)
             elif ablation == 'vtype':
                 s_emb = stc2emb(inputs=s,
                                      attention_mask=sm,
+                                     position_ids=sp*0.,
                                      time_ids=st)
             elif ablation == 'vtime':
                 s_emb = stc2emb(inputs=s,
                                      attention_mask=sm,
-                                     position_ids=sp)
+                                     position_ids=sp,
+                                     time_ids=st*0.)
             
             predict = EDisease_Model.classifier(s_emb[:,0,:])
 
