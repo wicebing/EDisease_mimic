@@ -315,7 +315,7 @@ def train_mimics(EDisease_Model,
             elif ablation == 'vtype':
                 s_emb = stc2emb(inputs=s_noise,
                                      attention_mask=sm,
-                                     position_ids=sp*0.)
+                                     position_ids=sp*0)
 
             predict = EDisease_Model.classifier(s_emb[:,0,:])
 
@@ -460,7 +460,7 @@ def testt_mimics(EDisease_Model,
             elif ablation == 'vtype':
                 s_emb = stc2emb(inputs=s,
                                      attention_mask=sm,
-                                     position_ids=sp*0.)
+                                     position_ids=sp*0)
             
             predict = EDisease_Model.classifier(s_emb[:,0,:])
 
