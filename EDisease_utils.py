@@ -226,53 +226,55 @@ def roc_auc_ci(y_true, y_score, AUC, positive=1):
 
     
 def calculate_ci_auroc():
-    auc_path = './result_pickles'
+    auc_path = './result_pickles/for_rocs/diff_data/Spectrum_model'
     auc_class = glob.glob(os.path.join(auc_path,'*'))
+    auc_class.sort()
+    
+    ROC_name = os.path.basename(auc_path)
     
     ROC_threshold = torch.linspace(0,1,100).numpy()
     
     res_ = []
+    fig = plt.figure(figsize=(6,6),dpi=200)
+    ax = fig.add_subplot(111)
     
     for auc_cls in auc_class:
         auc_cls_name = os.path.basename(auc_cls)
         auc_files = glob.glob(os.path.join(auc_cls,'*.pkl'))
         auc_files.sort()
         
-        fig = plt.figure(figsize=(6,6),dpi=200)
-        ax = fig.add_subplot(111)
+        auc_data_ = []
+        for auc_i in auc_files:      
+            auc_data_.append(pd.read_pickle(auc_i))
+            
+        auc_data = pd.concat(auc_data_,axis=0,ignore_index=True)
+            
+        method = auc_cls_name.split('_')[-1]
+        fpr, tpr, _ = roc_curve(auc_data['ground_truth'].values, auc_data['probability'].values)
         
-        for auc_i in auc_files:
-            auc_name = os.path.basename(auc_i).split('.')[0]
+        roc_auc = auc(fpr,tpr)
+        
+        auc_ci = roc_auc_ci(y_true = auc_data['ground_truth'].values, 
+                            y_score = auc_data['probability'].values,
+                            AUC = roc_auc)
+        
+        print(auc_cls_name,method, auc_ci)
+        res_.append([auc_cls_name,method, auc_ci])
+
+        label_auc2 = f'{method}, {auc_ci}'        
+        ax.plot(fpr,tpr,label=label_auc2)
             
-            method = auc_name.split('_')[-2]
-            
-            auc_data = pd.read_pickle(auc_i)
-            
-            fpr, tpr, _ = roc_curve(auc_data['ground_truth'].values, auc_data['probability'].values)
-            
-            roc_auc = auc(fpr,tpr)
-            
-            auc_ci = roc_auc_ci(y_true = auc_data['ground_truth'].values, 
-                                y_score = auc_data['probability'].values,
-                                AUC = roc_auc)
-            
-            print(auc_cls_name,method, auc_ci)
-            res_.append([auc_cls_name,method, auc_ci])
+    # ax.plot(ROC_threshold,ROC_threshold,'-.',label='random')
+    ax.set_xlabel('1-specificity')
+    ax.set_ylabel('sensitivity')
+    ax.set_title(f'ROC curves - Spectrum model')
+    plt.legend()
+    plt.xlim(0.,1.)
+    plt.ylim(0.,1.)
+    plt.legend()
+    plt.savefig(f'./pic_ROC/AUCs_{ROC_name}.png')   
     
-            label_auc2 = f'{method}, {auc_ci}'        
-            ax.plot(fpr,tpr,label=label_auc2)
-            
-        # ax.plot(ROC_threshold,ROC_threshold,'-.',label='random')
-        ax.set_xlabel('1-specificity')
-        ax.set_ylabel('sensitivity')
-        ax.set_title(f'ROC curves - {auc_cls_name}')
-        plt.legend()
-        plt.xlim(0.,1.)
-        plt.ylim(0.,1.)
-        plt.legend()
-        plt.savefig(f'./pic_ROC/AUCs_{auc_cls_name}.png')   
-        
-        pd.DataFrame(res_).to_csv(f'./pic_ROC/AUC_result_{auc_cls_name}.csv')
+    pd.DataFrame(res_).to_csv(f'./pic_ROC/AUC_result_{ROC_name}.csv')
     
 def calculate_ci_auroc_TSvsTP():
     auc_path = './TSvsTP'

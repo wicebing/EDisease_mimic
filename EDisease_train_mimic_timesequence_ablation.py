@@ -273,7 +273,7 @@ def train_mimics(EDisease_Model,
             elif ablation == 'vtype':
                 s_emb = stc2emb(inputs=s_noise,
                                      attention_mask=sm,
-                                     position_ids=sp*0.,
+                                     position_ids=sp*0,
                                      time_ids=st)
             elif ablation == 'vtime':
                 s_emb = stc2emb(inputs=s_noise,
