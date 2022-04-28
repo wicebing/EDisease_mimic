@@ -226,7 +226,7 @@ def roc_auc_ci(y_true, y_score, AUC, positive=1):
 
     
 def calculate_ci_auroc():
-    auc_path = './result_pickles/for_rocs/diff_data/Spectrum_model'
+    auc_path = './result_pickles/for_rocs/diff_data/Varying variables'
     auc_class = glob.glob(os.path.join(auc_path,'*'))
     auc_class.sort()
     
@@ -246,7 +246,9 @@ def calculate_ci_auroc():
         auc_data_ = []
         for auc_i in auc_files:      
             auc_data_.append(pd.read_pickle(auc_i))
-            
+        
+        if len(auc_data_)==0:
+            continue
         auc_data = pd.concat(auc_data_,axis=0,ignore_index=True)
             
         method = auc_cls_name.split('_')[-1]
@@ -267,7 +269,7 @@ def calculate_ci_auroc():
     # ax.plot(ROC_threshold,ROC_threshold,'-.',label='random')
     ax.set_xlabel('1-specificity')
     ax.set_ylabel('sensitivity')
-    ax.set_title(f'ROC curves - Spectrum model')
+    ax.set_title(f'ROC curves - Varying variables')
     plt.legend()
     plt.xlim(0.,1.)
     plt.ylim(0.,1.)
