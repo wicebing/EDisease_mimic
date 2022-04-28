@@ -1,0 +1,5 @@
+,0,1,2
+0,0_Model(44)-Variable(44),Model(44)-Variable(44),AUC=0.819 (0.804-0.834)
+1,1_Model(60)-Variable(44),Model(60)-Variable(44),AUC=0.733 (0.716-0.750)
+2,2_Model(60)-Variable(60),Model(60)-Variable(60),AUC=0.830 (0.815-0.845)
+3,3_Model(44)-Variable(60),Model(44)-Variable(60),AUC=0.781 (0.765-0.797)
