@@ -1260,12 +1260,18 @@ if task=='test_mlp_ip':
 if task=='trainTS':
     batch_size = 64
     # timesequence vitalsign
-    filepath = os.path.join(db_file_path, 'data_EDis', 'stayid_vitalsign_TS.pdpkl')
-    stayid_vitalsign_TS = pd.read_pickle(filepath)
+    # filepath = os.path.join(db_file_path, 'data_EDis', 'stayid_vitalsign_TS.pdpkl')
+    # stayid_vitalsign_TS = pd.read_pickle(filepath)
+    filepath = os.path.join(db_file_path, 'data_EDis', 'vitalsigns_per_stay_id.pdpkl')
+    with open(filepath, 'rb') as f:
+        stayid_vitalsign_TS = pickle.load(f)
     
     # timesequence lab
-    filepath = os.path.join(db_file_path, 'data_EDis', 'labevents_merge_dropna_clean_combine.pdpkl')
-    labevents_merge_dropna_clean_combine = pd.read_pickle(filepath)
+    # filepath = os.path.join(db_file_path, 'data_EDis', 'labevents_merge_dropna_clean_combine.pdpkl')
+    # labevents_merge_dropna_clean_combine = pd.read_pickle(filepath)
+    filepath = os.path.join(db_file_path, 'data_EDis', 'labevents_per_hadm_id.pdpkl')
+    with open(filepath, 'rb') as f:
+        labevents_merge_dropna_clean_combine = pickle.load(f)
 
     # combime the idx with mean std
     df_train_set_vitalsign_mean = train_set_vitalsign_mean.to_frame()
@@ -1406,7 +1412,7 @@ if task=='testTS':
     # timesequence vitalsign
     # filepath = os.path.join(db_file_path, 'data_EDis', 'stayid_vitalsign_TS.pdpkl')
     # stayid_vitalsign_TS = pd.read_pickle(filepath)
-    filepath = os.path.join(db_file_path, 'data_EDis', 'labevents_per_hadm_id.pdpkl')
+    filepath = os.path.join(db_file_path, 'data_EDis', 'vitalsigns_per_stay_id.pdpkl')
     with open(filepath, 'rb') as f:
         stayid_vitalsign_TS = pickle.load(f)
     
@@ -1415,7 +1421,7 @@ if task=='testTS':
     # labevents_merge_dropna_clean_combine = pd.read_pickle(filepath)
     filepath = os.path.join(db_file_path, 'data_EDis', 'labevents_per_hadm_id.pdpkl')
     with open(filepath, 'rb') as f:
-        labevents_merge_dropna_clean_combine = pickle.dump(f)
+        labevents_merge_dropna_clean_combine = pickle.load(f)
 
     # combime the idx with mean std
     df_train_set_vitalsign_mean = train_set_vitalsign_mean.to_frame()

@@ -272,12 +272,12 @@ class mimic_time_sequence_Dataset(Dataset):
         temp_select = pd.concat([temp_lab_select,temp_vs_select],axis=0,ignore_index=True)
         
         # add io
-        temp_select = temp_select.append(pd.DataFrame([['io_24',io24,1.,]],columns=temp_select.columns))
+        temp_select = pd.concat([temp_select,pd.DataFrame([['io_24',io24,1.,]],columns=temp_select.columns)],axis=0,ignore_index=True)
 
         # add age gender
         ag = self.agegender.loc[subject_id]
-        temp_select = temp_select.append(pd.DataFrame([['AGE',ag.AGE,0.,]],columns=temp_select.columns))
-        temp_select = temp_select.append(pd.DataFrame([['SEX',ag.SEX,0.,]],columns=temp_select.columns))
+        temp_select = pd.concat([temp_select,pd.DataFrame([['AGE',ag.AGE,0.,]],columns=temp_select.columns)],axis=0,ignore_index=True)
+        temp_select = pd.concat([temp_select,pd.DataFrame([['SEX',ag.SEX,0.,]],columns=temp_select.columns)],axis=0,ignore_index=True)
 
         # fillna with mask flag
         temp_select_idx_m_s = temp_select.merge(self.structurals_idx,how='left',on='bb_idx')

@@ -83,7 +83,7 @@ db_file_path = '../datahouse/mimic-iv-0.4'
 # timesequence vitalsign
 # filepath = os.path.join(db_file_path, 'data_EDis', 'stayid_vitalsign_TS.pdpkl')
 # stayid_vitalsign_TS = pd.read_pickle(filepath)
-filepath = os.path.join(db_file_path, 'data_EDis', 'labevents_per_hadm_id.pdpkl')
+filepath = os.path.join(db_file_path, 'data_EDis', 'vitalsigns_per_stay_id.pdpkl')
 with open(filepath, 'rb') as f:
     stayid_vitalsign_TS = pickle.load(f)
 
@@ -92,7 +92,7 @@ with open(filepath, 'rb') as f:
 # labevents_merge_dropna_clean_combine = pd.read_pickle(filepath)
 filepath = os.path.join(db_file_path, 'data_EDis', 'labevents_per_hadm_id.pdpkl')
 with open(filepath, 'rb') as f:
-    labevents_merge_dropna_clean_combine = pickle.dump(f)
+    labevents_merge_dropna_clean_combine = pickle.load(f)
 
 # time point data
 filepath = os.path.join(db_file_path, 'data_EDis', 'select_temp0.pdpkl')
