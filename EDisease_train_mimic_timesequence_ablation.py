@@ -379,6 +379,8 @@ def train_mimics(EDisease_Model,
                                     checkpoint_path='stc2emb_best.pth',
                                     model=stc2emb,
                                     parallel=parallel)
+                elif roc_auc+0.15 < best_auc:
+                    break
             except Exception as e:
                 print(e)
             
