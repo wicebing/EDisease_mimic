@@ -20,7 +20,7 @@ from EDisease_utils import count_parameters, save_checkpoint, load_checkpoint
 from EDisease_config import EDiseaseConfig, StructrualConfig
 import EDisease_model_v001 as ED_model
 
-import EDisease_dataloader_mimic4_001 as dataloader
+import EDisease_dataloader_mimic4_002 as dataloader
 
 import warnings
 from pandas.core.common import SettingWithCopyWarning
@@ -81,12 +81,18 @@ print('baseBERT PARAMETERS: ' ,count_parameters(baseBERT))
 db_file_path = '../datahouse/mimic-iv-0.4'
 
 # timesequence vitalsign
-filepath = os.path.join(db_file_path, 'data_EDis', 'stayid_vitalsign_TS.pdpkl')
-stayid_vitalsign_TS = pd.read_pickle(filepath)
+# filepath = os.path.join(db_file_path, 'data_EDis', 'stayid_vitalsign_TS.pdpkl')
+# stayid_vitalsign_TS = pd.read_pickle(filepath)
+filepath = os.path.join(db_file_path, 'data_EDis', 'labevents_per_hadm_id.pdpkl')
+with open(filepath, 'rb') as f:
+    stayid_vitalsign_TS = pickle.load(f)
 
 # timesequence lab
-filepath = os.path.join(db_file_path, 'data_EDis', 'labevents_merge_dropna_clean_combine.pdpkl')
-labevents_merge_dropna_clean_combine = pd.read_pickle(filepath)
+# filepath = os.path.join(db_file_path, 'data_EDis', 'labevents_merge_dropna_clean_combine.pdpkl')
+# labevents_merge_dropna_clean_combine = pd.read_pickle(filepath)
+filepath = os.path.join(db_file_path, 'data_EDis', 'labevents_per_hadm_id.pdpkl')
+with open(filepath, 'rb') as f:
+    labevents_merge_dropna_clean_combine = pickle.dump(f)
 
 # time point data
 filepath = os.path.join(db_file_path, 'data_EDis', 'select_temp0.pdpkl')
