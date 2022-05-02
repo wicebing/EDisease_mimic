@@ -279,7 +279,7 @@ def calculate_ci_auroc():
             plt.xlim(0.,1.)
             plt.ylim(0.,1.)
             plt.legend()
-            plt.savefig(f'./pic_ROC/AUCs_{ROC_name}.png')   
+            plt.savefig(f'./pic_ROC/AUCs_{ROC_name}.jpg')   
             
             pd.DataFrame(res_).to_csv(f'./pic_ROC/AUC_result_{ROC_name}.csv')
     
@@ -401,7 +401,7 @@ def draw_distribution():
                 else:
                     plt.title(f'{k}',fontsize=60)
         
-    plt.savefig('./data_distribution2.png') 
+    plt.savefig('./data_distribution2.jpg') 
     
 
 def make_less_70_missing_rate_data():
