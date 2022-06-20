@@ -53,9 +53,10 @@ class adjBERTmodel(nn.Module):
 
 
 class float2spectrum(nn.Module):
-    def __init__(self, embedding_size):
+    def __init__(self, embedding_size, spectrum_type=None):
         super(float2spectrum, self).__init__()
         self.embedding_size = embedding_size
+        self.spectrum_type = spectrum_type
         
     def forward(self, tensor, time=False):
         '''
@@ -64,38 +65,37 @@ class float2spectrum(nn.Module):
         the emb_x will be the same on 1 -> 96, 2-> 97, ...
         due to the minus exist the minmax must be the half of embedding_size to avoid aliasing effect 2x sample freq
         '''
-        # experimental 0 [cos x, sin x] auc 0.846
-        # thida = torch.linspace(0,2*math.pi,int(self.embedding_size/2),device=device)
-        # k_thida = torch.einsum("nm,k->nmk", tensor, thida)
-        # emb_x = torch.cat((k_thida.cos(),k_thida.sin()), dim=-1)
-        
-        # experimental 1 [sin x]
-        # thida = torch.linspace(0,math.pi,int(self.embedding_size),device=device)
-        # k_thida = torch.einsum("nm,k->nmk", tensor, thida)
-        # emb_x = k_thida.sin()
-        
-        # experimental 2 [transformer position token]
-        # thida = math.pi/ (10000 ** torch.linspace(0,1,int(self.embedding_size),device=device).float())
-        # thida_neg = 1./ (10000 ** (torch.linspace(math.pi,0,int(self.embedding_size/2),device=device).float()/math.pi))
-        # thida = torch.cat([-1*thida_neg,thida_pos],dim=-1)
-        
+       
         device = tensor.device
-        minmax = 0.5
-        tensor = tensor.clamp(min=-1*minmax,max=minmax)
-        thida = torch.linspace(0,math.pi,self.embedding_size,device=device).float()
-        k_thida = torch.einsum("nm,k->nmk", tensor, thida)
-        
-        if time:
-            emb_x = 0.1*k_thida.cos()
-        else:
-            emb_x = k_thida.sin()
+        if self.spectrum_type is None:
+            minmax = 0.5
+            tensor = tensor.clamp(min=-1*minmax,max=minmax)
+            thida = torch.linspace(0,math.pi,self.embedding_size,device=device).float()
+            k_thida = torch.einsum("nm,k->nmk", tensor, thida)
+            
+            if time:
+                emb_x = 0.1*k_thida.cos()
+            else:
+                emb_x = k_thida.sin()
+                
+        elif self.spectrum_type == 'cossin':
+            # experimental 0 [cos x, sin x] auc 0.846
+            thida = torch.linspace(0,20*math.pi,int(self.embedding_size/2),device=device)
+            k_thida = torch.einsum("nm,k->nmk", tensor, thida)
+            emb_x = torch.cat((k_thida.cos(),k_thida.sin()), dim=-1)
+            
+        elif self.spectrum_type == 'sigmoid':
+            # experimental 2 [transformer position token]
+            thida = torch.linspace(0,math.pi,self.embedding_size,device=device).float()
+            k_thida = torch.einsum("nm,k->nmk", tensor, thida)
+            emb_x = k_thida.sigmoid()
         
         return emb_x        
 
 class structure_emb(nn.Module):
-    def __init__(self, config):
+    def __init__(self, config, spectrum_type=None):
         super(structure_emb, self).__init__()
-        self.float2emb = float2spectrum(config.hidden_size)
+        self.float2emb = float2spectrum(config.hidden_size,spectrum_type)
         
         self.Config = BertConfig()
         self.Config.hidden_size = config.hidden_size

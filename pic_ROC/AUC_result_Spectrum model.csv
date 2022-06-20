@@ -3,4 +3,4 @@
 1,1_Low-missing,Low-missing,AUC=0.819 (0.804-0.834)
 2,2_Low-missing & skew adjust,Low-missing & skew adjust,AUC=0.825 (0.810-0.839)
 3,3_Time-sequence,Time-sequence,AUC=0.842 (0.828-0.856)
-4,4_Dx + Time-sequence,Dx + Time-sequence,AUC=0.899 (0.884-0.913)
+4,4_Dx + Time-sequence,Dx + Time-sequence,AUC=0.900 (0.888-0.912)

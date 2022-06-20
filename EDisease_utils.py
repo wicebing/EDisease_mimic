@@ -162,7 +162,7 @@ def draw_time():
         ax = plt.subplot2grid((10,10),(yi,xi))
         ax.plot(value,linewidth=10)
         ax.axis('off')
-        plt.title(f'{0.05*p:.1f}',fontsize=60)
+        plt.title(f'{0.05*p:.2f}',fontsize=60)
         
     plt.savefig('./Spectrum_time_pi_final.png')  
     
