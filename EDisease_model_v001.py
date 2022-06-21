@@ -89,6 +89,24 @@ class float2spectrum(nn.Module):
             thida = torch.linspace(0,math.pi,self.embedding_size,device=device).float()
             k_thida = torch.einsum("nm,k->nmk", tensor, thida)
             emb_x = k_thida.sigmoid()
+            
+        elif self.spectrum_type == 'sinh':
+            # experimental 2 [transformer position token]
+            thida = torch.linspace(0,math.pi,self.embedding_size,device=device).float()
+            k_thida = torch.einsum("nm,k->nmk", tensor, thida)
+            emb_x = k_thida.sinh()
+
+        elif self.spectrum_type == 'exp':
+            # experimental 2 [transformer position token]
+            thida = torch.linspace(0,math.pi,self.embedding_size,device=device).float()
+            k_thida = torch.einsum("nm,k->nmk", tensor, thida)
+            emb_x = k_thida.exp()
+            
+        elif self.spectrum_type == 'parabolic':
+            # experimental 2 [transformer position token]
+            thida = torch.linspace(0,math.pi,self.embedding_size,device=device).float()
+            k_thida = torch.einsum("nm,k->nmk", tensor, thida)
+            emb_x = k_thida**2
         
         return emb_x        
 

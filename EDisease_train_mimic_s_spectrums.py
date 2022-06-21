@@ -50,7 +50,7 @@ try:
     spectrum_type = sys.argv[5]
 except:
     spectrum_type = None
-print('*****name = ', spectrum_type)
+print('*****spectrum_type = ', spectrum_type)
 
 batch_size = 128
 
