@@ -359,7 +359,7 @@ def train_mimics(EDisease_Model,
                                                      S_config=S_config
                                                      )
             
-            vstc2emb = ED_model.structure_emb(S_config) if not mlp else ED_model.structure_emb_mlp(S_config)
+            vstc2emb = ED_model.structure_emb(S_config,spectrum_type=spectrum_type) if not mlp else ED_model.structure_emb_mlp(S_config)
         
             
             try: 
@@ -403,12 +403,12 @@ def train_mimics(EDisease_Model,
                 print(e)
             
             pd_total_auc = pd.DataFrame(auc_record)
-            pd_total_auc.to_csv(f'./loss_record/{skemAdjust}/{random_state}/total_auc_s_{s_type}_{spectrum_type}.csv', sep = ',')
+            pd_total_auc.to_csv(f'./loss_record/{skemAdjust}/{random_state}/total_auc_s_{s_type}_z_{spectrum_type}.csv', sep = ',')
         
         print('++ Ep Time: {:.1f} Secs ++'.format(time.time()-t0)) 
         total_loss.append(float(epoch_loss/epoch_cases))
         pd_total_loss = pd.DataFrame(total_loss)
-        pd_total_loss.to_csv(f'./loss_record/{skemAdjust}/{random_state}/total_loss_s_{s_type}_{spectrum_type}.csv', sep = ',')
+        pd_total_loss.to_csv(f'./loss_record/{skemAdjust}/{random_state}/total_loss_s_{s_type}_z_{spectrum_type}.csv', sep = ',')
     print(total_loss) 
 
 
@@ -591,7 +591,7 @@ if task=='test_':
     
     roc_auc = auc(fpr,tpr)
     
-    valres.to_pickle(f'./result_pickles/{skemAdjust}/{random_state}/EDspectrumFlat_OnlyS_{spectrum_type}_{roc_auc*1000:.0f}.pkl')
+    valres.to_pickle(f'./result_pickles/{skemAdjust}/{random_state}/EDspectrumFlat_OnlyS_z_{spectrum_type}_{roc_auc*1000:.0f}.pkl')
 
     print(f'auc: {roc_auc:.3f}')
  

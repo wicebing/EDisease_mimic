@@ -80,13 +80,13 @@ class float2spectrum(nn.Module):
                 
         elif self.spectrum_type == 'cossin':
             # experimental 0 [cos x, sin x] auc 0.846
-            thida = torch.linspace(0,20*math.pi,int(self.embedding_size/2),device=device)
+            thida = torch.linspace(0,math.pi,int(self.embedding_size/2),device=device)
             k_thida = torch.einsum("nm,k->nmk", tensor, thida)
             emb_x = torch.cat((k_thida.cos(),k_thida.sin()), dim=-1)
             
         elif self.spectrum_type == 'sigmoid':
             # experimental 2 [transformer position token]
-            thida = torch.linspace(0,math.pi,self.embedding_size,device=device).float()
+            thida = torch.linspace(0,1,self.embedding_size,device=device).float()
             k_thida = torch.einsum("nm,k->nmk", tensor, thida)
             emb_x = k_thida.sigmoid()
             
@@ -98,13 +98,13 @@ class float2spectrum(nn.Module):
 
         elif self.spectrum_type == 'exp':
             # experimental 2 [transformer position token]
-            thida = torch.linspace(0,math.pi,self.embedding_size,device=device).float()
+            thida = torch.linspace(0,1,self.embedding_size,device=device).float()
             k_thida = torch.einsum("nm,k->nmk", tensor, thida)
             emb_x = k_thida.exp()
             
         elif self.spectrum_type == 'parabolic':
             # experimental 2 [transformer position token]
-            thida = torch.linspace(0,math.pi,self.embedding_size,device=device).float()
+            thida = torch.linspace(0,1,self.embedding_size,device=device).float()
             k_thida = torch.einsum("nm,k->nmk", tensor, thida)
             emb_x = k_thida**2
         
