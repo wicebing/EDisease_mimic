@@ -107,6 +107,12 @@ class float2spectrum(nn.Module):
             thida = torch.linspace(0,1,self.embedding_size,device=device).float()
             k_thida = torch.einsum("nm,k->nmk", tensor, thida)
             emb_x = k_thida**2
+            
+        elif self.spectrum_type == 'linear':
+            # experimental 2 [transformer position token]
+            thida = torch.linspace(0,1,self.embedding_size,device=device).float()
+            k_thida = torch.einsum("nm,k->nmk", tensor, thida)
+            emb_x = k_thida
         
         return emb_x        
 
