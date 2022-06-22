@@ -16,7 +16,7 @@ import torch.optim as optim
 from torch.utils.data import DataLoader, Dataset
 import glob
 from math import sqrt
-from sklearn.metrics import roc_curve, auc, accuracy_score
+from sklearn.metrics import roc_curve, auc, accuracy_score, f1_score, precision_recall_curve
 
 def count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)  
@@ -282,7 +282,62 @@ def calculate_ci_auroc():
             plt.savefig(f'./pic_ROC/AUCs_{ROC_name}.jpg')   
             
             pd.DataFrame(res_).to_csv(f'./pic_ROC/AUC_result_{ROC_name}.csv')
+            
+def calculate_other_metrics():
+    auc_path_ROOT = './result_pickles/for_metrics'
+    auc_ROOT = glob.glob(os.path.join(auc_path_ROOT,'*'))
+    ths = [0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9]
+    for best_threshold in ths:
+        res_ = []
+        for root in auc_ROOT:
+            skemAdjust = os.path.basename(root)
+            roots = glob.glob(os.path.join(root,'*'))
+            for auc_path in roots:
+                auc_class = glob.glob(os.path.join(auc_path,'*'))
+                auc_class.sort()
+                
+                ROC_name = os.path.basename(auc_path)
     
+                for auc_cls in auc_class:
+                    auc_cls_name = os.path.basename(auc_cls)            
+                    auc_data = pd.read_pickle(auc_cls)
+                                 
+                    fpr, tpr, threshold = roc_curve(auc_data['ground_truth'].values, auc_data['probability'].values)
+                    roc_auc = auc(fpr,tpr)
+                                    
+                    auc_ci = roc_auc_ci(y_true = auc_data['ground_truth'].values, 
+                                        y_score = auc_data['probability'].values,
+                                        AUC = roc_auc)
+    
+                    precision, recall, thre_ = precision_recall_curve(auc_data['ground_truth'].values, auc_data['probability'].values)
+                    auprc = auc(recall,precision)
+    
+                    auprc_ci = roc_auc_ci(y_true = auc_data['ground_truth'].values, 
+                                        y_score = auc_data['probability'].values,
+                                        AUC = auprc)
+    
+                    # best_threshold = threshold[np.argmax(tpr-fpr)]
+                    # best_threshold=0.8
+                    auc_data['predict'] = (auc_data['probability']> best_threshold ).astype(int)
+                    f1 = f1_score(auc_data['ground_truth'].values, auc_data['predict'].values)
+                    acc = accuracy_score(auc_data['ground_truth'].values, auc_data['predict'].values)
+                    
+                    rrrrrrrrrr =[skemAdjust,
+                                 ROC_name,
+                                 auc_cls,
+                                 auc_cls_name, 
+                                 roc_auc, 
+                                 auc_ci,
+                                 auprc,
+                                 auprc_ci,
+                                 f1,
+                                 acc
+                                 ]
+                    print(rrrrrrrrrr)
+                    res_.append(rrrrrrrrrr)
+            
+                
+        pd.DataFrame(res_).to_csv(f'./pic_ROC/metrics_results/metrics_results_{100*best_threshold:.0f}.csv')
 def calculate_ci_auroc_TSvsTP():
     auc_path = './TSvsTP'
     auc_class = glob.glob(os.path.join(auc_path,'*'))
