@@ -86,13 +86,13 @@ class float2spectrum(nn.Module):
                         
         elif self.spectrum_type == 'sigmoid':
             # experimental 2 [transformer position token]
-            thida = torch.linspace(0,1,self.embedding_size,device=device).float()
+            thida = torch.linspace(0,10,self.embedding_size,device=device).float()
             k_thida = torch.einsum("nm,k->nmk", tensor, thida)
             emb_x = k_thida.sigmoid()
             
         elif self.spectrum_type == 'sinh':
             # experimental 2 [transformer position token]
-            thida = torch.linspace(0,math.pi,self.embedding_size,device=device).float()
+            thida = torch.linspace(0,2*math.pi,self.embedding_size,device=device).float()
             k_thida = torch.einsum("nm,k->nmk", tensor, thida)
             emb_x = k_thida.sinh()
 
@@ -113,6 +113,18 @@ class float2spectrum(nn.Module):
             thida = torch.linspace(0,1,self.embedding_size,device=device).float()
             k_thida = torch.einsum("nm,k->nmk", tensor, thida)
             emb_x = k_thida
+            
+        elif self.spectrum_type == 'constant':
+            # experimental 2 [transformer position token]
+            thida = torch.linspace(1,1,self.embedding_size,device=device).float()
+            k_thida = torch.einsum("nm,k->nmk", tensor, thida)
+            emb_x = k_thida
+
+        elif self.spectrum_type == 'sin_period':
+            # experimental 2 [transformer position token]
+            thida = torch.linspace(0,4*math.pi,self.embedding_size,device=device).float()
+            k_thida = torch.einsum("nm,k->nmk", tensor, thida)
+            emb_x = k_thida.sin()
         
         return emb_x        
 

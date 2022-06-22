@@ -165,6 +165,171 @@ def draw_time():
         plt.title(f'{0.05*p:.2f}',fontsize=60)
         
     plt.savefig('./Spectrum_time_pi_final.png')  
+
+def draw_functions():
+    tensor = ((0.5/49.5)*(torch.arange(100)-49.5)).unsqueeze(0)
+    spectrums = ['sigmoid',
+                 'sinh',
+                 'exp',
+                 'parabolic',
+                 'linear',
+                 'constant',
+                 'sin_period']
+    for spectrum_type in spectrums:
+        if spectrum_type == 'sigmoid':
+            # experimental 2 [transformer position token]
+            thida = torch.linspace(0,10,96).float()
+            k_thida = torch.einsum("nm,k->nmk", tensor, thida)
+            emb_x = k_thida.sigmoid()
+            
+        elif spectrum_type == 'sinh':
+            # experimental 2 [transformer position token]
+            thida = torch.linspace(0,2*math.pi,96).float()
+            k_thida = torch.einsum("nm,k->nmk", tensor, thida)
+            emb_x = k_thida.sinh()
+
+        elif spectrum_type == 'exp':
+            # experimental 2 [transformer position token]
+            thida = torch.linspace(0,1,96).float()
+            k_thida = torch.einsum("nm,k->nmk", tensor, thida)
+            emb_x = k_thida.exp()
+            
+        elif spectrum_type == 'parabolic':
+            # experimental 2 [transformer position token]
+            thida = torch.linspace(0,1,96).float()
+            k_thida = torch.einsum("nm,k->nmk", tensor, thida)
+            emb_x = k_thida**2
+            
+        elif spectrum_type == 'linear':
+            # experimental 2 [transformer position token]
+            thida = torch.linspace(0,1,96).float()
+            k_thida = torch.einsum("nm,k->nmk", tensor, thida)
+            emb_x = k_thida
+        
+        elif spectrum_type == 'constant':
+            # experimental 2 [transformer position token]
+            thida = torch.linspace(1,1,96).float()
+            k_thida = torch.einsum("nm,k->nmk", tensor, thida)
+            emb_x = k_thida
+
+        elif spectrum_type == 'sin_period':
+            # experimental 2 [transformer position token]
+            thida = torch.linspace(0,4*math.pi,96).float()
+            k_thida = torch.einsum("nm,k->nmk", tensor, thida)
+            emb_x = k_thida.sin()
+    
+        fig = plt.figure(figsize=(48,48),dpi=100)
+        
+        for p in range(100):        
+            value =emb_x[0][p]
+            xi = p%10
+            yi = int(p/10)
+            ax = plt.subplot2grid((10,10),(yi,xi))
+            ax.plot(value,linewidth=10)
+            ax.axis('off')
+            plt.title(f'{0.2*(p-49.5):.2f}',fontsize=60)
+            
+        plt.savefig(f'./functions/Spectrum_{spectrum_type}.png')    
+        
+
+def draw_functions_innerproduct():
+    tensor = ((0.5/47.5)*(torch.arange(96)-47.5)).unsqueeze(0)
+
+    spectrums = ['sigmoid',
+                 'sinh',
+                 'exp',
+                 'parabolic',
+                 'linear',
+                 'constant',
+                 'sin_period']
+    for spectrum_type in spectrums:
+        if spectrum_type == 'sigmoid':
+            # experimental 2 [transformer position token]
+            thida = torch.linspace(0,10,96).float()
+            k_thida = torch.einsum("nm,k->nmk", tensor, thida)
+            emb_x = k_thida.sigmoid()
+            
+        elif spectrum_type == 'sinh':
+            # experimental 2 [transformer position token]
+            thida = torch.linspace(0,2*math.pi,96).float()
+            k_thida = torch.einsum("nm,k->nmk", tensor, thida)
+            emb_x = k_thida.sinh()
+
+        elif spectrum_type == 'exp':
+            # experimental 2 [transformer position token]
+            thida = torch.linspace(0,1,96).float()
+            k_thida = torch.einsum("nm,k->nmk", tensor, thida)
+            emb_x = k_thida.exp()
+            
+        elif spectrum_type == 'parabolic':
+            # experimental 2 [transformer position token]
+            thida = torch.linspace(0,1,96).float()
+            k_thida = torch.einsum("nm,k->nmk", tensor, thida)
+            emb_x = k_thida**2
+            
+        elif spectrum_type == 'linear':
+            # experimental 2 [transformer position token]
+            thida = torch.linspace(0,1,96).float()
+            k_thida = torch.einsum("nm,k->nmk", tensor, thida)
+            emb_x = k_thida
+
+        elif spectrum_type == 'constant':
+            # experimental 2 [transformer position token]
+            thida = torch.linspace(0,1,96).float()
+            k_thida = torch.einsum("nm,k->nmk", tensor, thida**0)
+            emb_x = k_thida
+            
+        elif spectrum_type == 'sin_period':
+            # experimental 2 [transformer position token]
+            thida = torch.linspace(0,4*math.pi,96).float()
+            k_thida = torch.einsum("nm,k->nmk", tensor, thida)
+            emb_x = k_thida.sin()
+            
+        xlabels = list((1*(torch.arange(20)-9.5)).numpy())
+        
+        kk = emb_x[0]
+        ktn = torch.matmul(kk,kk.T).numpy()
+        # ktn = (kt -kt.mean())/kt.std()
+     
+        ktn_clamp = (ktn-ktn.min())
+        ktn_clamp /= ktn_clamp.max()
+    
+        fig = plt.figure(figsize=(63,54),dpi=100)
+        sns.set(font_scale = 12)
+        ax = sns.heatmap(ktn_clamp, linewidth=0.,alpha=.9)
+        
+        ax.set_xticklabels(xlabels)
+        ax.set_yticklabels(xlabels)
+        
+        plt.savefig(f'./functions/innerproduct_Spectrum_{spectrum_type}.png')
+
+def draw_time():
+    # thida_pos = math.pi/ (10000 ** (torch.linspace(0,1,int(96)).float()/1))
+    thida_pos =  torch.linspace(0,math.pi,int(96)).float()
+
+    # thida_neg = 1./ (10000 ** (torch.linspace(math.pi,0,int(48)).float()/math.pi))
+    # thida = torch.cat([-1*thida_neg,thida_pos],dim=-1)
+    
+    tensor = 0.5*(torch.arange(100)/100).unsqueeze(0)
+    k_thida = torch.einsum("nm,k->nmk", tensor, thida_pos)
+    k_thida = k_thida.cos()
+
+    # k_thida = torch.cat([k_thida.cos(),k_thida.sin()],dim=-1)
+  
+    fig = plt.figure(figsize=(48,48),dpi=100)
+    
+    for p in range(100):        
+        value =k_thida[0][p]
+        xi = p%10
+        yi = int(p/10)
+        ax = plt.subplot2grid((10,10),(yi,xi))
+        ax.plot(value,linewidth=10)
+        ax.axis('off')
+        plt.title(f'{0.05*p:.2f}',fontsize=60)
+        
+    plt.savefig('./Spectrum_time_pi_final.png')  
+
+
     
 def draw_spectrum_time_innerproduct():
     # thida_pos = math.pi/ (10000 ** (torch.linspace(0,1,int(96)).float()/1))
