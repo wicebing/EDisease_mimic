@@ -1,16 +1,4 @@
 echo "====== train SPEC ? ? ======" $1 $2
-python EDisease_train_mimic_s_spectrums.py train_ $1 $2 origin constant
-
-echo "====== test SPEC ? ? EM ======" $1 $2
-python EDisease_train_mimic_s_spectrums.py test_ $1 $2 origin constant
-
-echo "====== train SPEC ? ? ======" $1 $2
-python EDisease_train_mimic_s_spectrums.py train_ $1 $2 origin sin_period
-
-echo "====== test SPEC ? ? EM ======" $1 $2
-python EDisease_train_mimic_s_spectrums.py test_ $1 $2 origin sin_period
-
-echo "====== train SPEC ? ? ======" $1 $2
 python EDisease_train_mimic_s_spectrums.py train_ $1 $2 origin linear
 
 echo "====== test SPEC ? ? EM ======" $1 $2
