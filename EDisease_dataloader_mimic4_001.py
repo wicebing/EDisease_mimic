@@ -314,7 +314,7 @@ class mimic_time_sequence_Dataset(Dataset):
         structure_tensor = torch.tensor(temp_select_idx_m_s['n_value'],dtype=torch.float32)
         structure_attention_mask_tensor = torch.tensor(temp_select_idx_m_s['missing_value'],dtype=torch.long)
         structure_position_ids_tensor = torch.tensor(temp_select_idx_m_s['s_idx'],dtype=torch.long)
-        structure_time_ids_tensor = torch.tensor(temp_select_idx_m_s['time_day'],dtype=torch.long)
+        structure_time_ids_tensor = torch.tensor(temp_select_idx_m_s['time_day'],dtype=torch.float32)
         
         trg = los
         trg_tensor = torch.tensor(los,dtype=torch.float32)
